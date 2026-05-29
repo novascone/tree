@@ -3,8 +3,9 @@ name: tree
 channels:
   - conda-forge
   - defaults
-dependencies:
-  - python = 3.13
+dependencies: 
   - cmake
   - hdf5
   - netcdf4
+variables:
+  BLENDER_PATH: /home/warrennovascone/blender/blender-5.1.2-linux-x64

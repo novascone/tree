@@ -21,8 +21,8 @@ Three distinct layers that handle, reading data and storing it in memory, interp
 and integrating for the path. This is important for keeping TREE format agnostic. No layer should need to know
 about another. If TREE supports opening a file type that data can be visualized. 
 
-### Deriv Overloading for Coordinate Systems
-The `Deriv` functor passed to the integrator assumes the state vector and field values share units. For geographic
+### Derivative Overloading for Coordinate Systems
+The `Derivative` functor passed to the integrator assumes the state vector and field values share units. For geographic
 coordinate systems (lat/lon/alt) with winds in m/s, a separate `GeographicDeriv` overload handles the unit
 conversion (m/s → degrees/s) via the standard 111 km/degree scaling for lat and cos(lat) correction for lon.
 `driveField` selects the correct functor based on `FieldConfig::coordinate_system`. This keeps unit assumptions
