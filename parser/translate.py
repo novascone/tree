@@ -30,7 +30,7 @@ def translate(TREE_input) -> tree_core.TREEConfig:
             fieldBind.vec_render.line_type = field.render.line_type
             fieldBind.vec_render.seed_count = field.render.seed_count
             fieldBind.vec_render.seed_distribution = field.render.seed_distribution
-        if field.type == "scalar":
+        elif field.type == "scalar":
             fieldBind.scalar_render = tree_core.ScalarRenderConfig()
             fieldBind.scalar_render.colormap = field.render.colormap
         TREEBinds.fields.append(fieldBind)

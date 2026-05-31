@@ -2,7 +2,7 @@
 class GeometryConfig:
     name:str
     type:str
-    source:str
+    source:str | None
     parameters:dict
 
     def __init__(self):
@@ -50,7 +50,7 @@ class FieldConfig:
 
 class TREEConfig:
     geometry: GeometryConfig
-    fields:[FieldConfig]
+    fields: list[FieldConfig]
 
     def __init__(self):
         self.geometry = None

@@ -1,7 +1,6 @@
 
 class Block:
-    name:str
-    type:str
+    name:str 
     attributes: dict
     children: list["Block"]
 

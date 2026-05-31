@@ -6,7 +6,7 @@ fi
 
 if [ -z "$BLENDER_PATH" ]; then
    read -p "Enter Blender path: " BLENDER_PATH
-   sed -i "s|BLENDER_PATH:.*|BLENDER_PATH: $BLENDER_PATH|" environment.yml  
+   conda env config vars set BLENDER_PATH=$BLENDER_PATH -n tree
 fi
 
 PYTHON_BIN=($BLENDER_PATH/*/python/bin/python3*)

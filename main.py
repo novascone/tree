@@ -1,31 +1,36 @@
 
 import sys
+import tree_core
 sys.path.insert(0, 'build')
-from parser.convert import convert
-from parser.lex import *
-from parser.parse import *
-from parser.validate import *
-from parser.convert import *
-from parser.translate import *
+from parser.lex import lex 
+from parser.parse import parse 
+from parser.validate import validate  
+from parser.convert import convert 
+from parser.translate import translate 
 #import blender.mesh
 
-file:str = sys.argv[1]
-
-def print_tree(blocks):    
+def print_tree(blocks):
     for child in blocks.children:
         print(child.name)
         print(child.attributes)
         print_tree(child)
 
-with open(file) as f:
-    tokens = lex(f)
 
-root = parse(tokens)
+if __name__ == "__main__":
 
+    input_file:str = sys.argv[1]
+     
+    with open(input_file) as f:
+        tokens = lex(f)
+    
+    root = parse(tokens)
+    
+    try:
+        validate(root)
+    except ValueError as e:
+        print(e)
+        sys.exit(1)
 
-valid_tree:Block
-
-if validate(root):
     valid_tree = root
     config = convert(valid_tree)
     print("geometry type: ", config.geometry.type)
@@ -35,8 +40,8 @@ if validate(root):
     for field in tree_config.fields:
         print(field.name)
         print(field.source)
-
-        
+    
+            
     print(tree_config.geometry.parameters)
     geometry = tree_core.build_mesh(tree_config.geometry)
     print("Mesh name: ", geometry.name)
@@ -44,13 +49,13 @@ if validate(root):
     print("Length of faces: ", len(geometry.faces))
     read = tree_core.Read(tree_config.fields[0])
     seeds = [[0.0, 0.0, 86], [30.0, 90.0, 86.0]]
-    
+        
     streamline_set = tree_core.driveField(read, seeds)
-
+    
     for i in range(len(streamline_set)):
         for j in range(len(streamline_set[i])):
             print(streamline_set[i][j])
-    
+        
     #blender_mesh = blender.mesh.build_mesh(geometry)
     
 

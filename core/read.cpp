@@ -5,6 +5,7 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <stdexcept>
 
 Read::Read(){}
 
@@ -13,7 +14,9 @@ Read::Read(FieldConfig field_config) {
    if (p.extension() == ".nc") {
 
       int file_id;
-      [[maybe_unused]] int status = nc_open(field_config.source.c_str(), NC_NOWRITE, &file_id); 
+      int status = nc_open(field_config.source.c_str(), NC_NOWRITE, &file_id);
+
+      if (status != NC_NOERR) throw std::runtime_error(nc_strerror(status));
 
       if (field_config.variables.has_value()) {
          for (const std::string& name : field_config.variables.value()) {  
@@ -30,24 +33,38 @@ Read::Read(FieldConfig field_config) {
             correlated[i] = 0; 
             i++;
          } 
-      } 
+      }
+
+      nc_close(file_id);
    }
 }
 
 std::vector<double> Read::readNetCDFVariable(int file_id, const std::string& name) {
    int var_id;
-   nc_inq_varid(file_id, name.c_str(), &var_id); 
+   int status = nc_inq_varid(file_id, name.c_str(), &var_id); 
+
+   if (status != NC_NOERR) throw std::runtime_error(nc_strerror(status));
+ 
    int ndims;
    int dim_ids[NC_MAX_VAR_DIMS];
-   nc_inq_var(file_id, var_id, nullptr, nullptr, &ndims, dim_ids, nullptr);
+   status = nc_inq_var(file_id, var_id, nullptr, nullptr, &ndims, dim_ids, nullptr);
+
+   if (status != NC_NOERR) throw std::runtime_error(nc_strerror(status));
+  
    size_t total = 1;
    for (int i = 0; i < ndims; i++) {
       size_t len;
-      nc_inq_dimlen(file_id, dim_ids[i], &len);
+      status = nc_inq_dimlen(file_id, dim_ids[i], &len);
+
+      if (status != NC_NOERR) throw std::runtime_error(nc_strerror(status));
+
       total *= len;
    } 
    std::vector<double> buffer(total);
-   nc_get_var_double(file_id, var_id, buffer.data());
+   status = nc_get_var_double(file_id, var_id, buffer.data());
+
+   if (status != NC_NOERR) throw std::runtime_error(nc_strerror(status));
+
    return buffer; 
 }
 

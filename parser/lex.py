@@ -1,7 +1,7 @@
 
 def lex(file) -> list:
     tokens = []
-    for  line in file:
+    for line in file:
         line = line.strip()
         if len(line) == 0:
             continue
@@ -11,7 +11,7 @@ def lex(file) -> list:
             tokens.append(pair(line))
         elif line[0:1] == "\\":
             pass
-        else :
+        else:
             continue
     return tokens 
 

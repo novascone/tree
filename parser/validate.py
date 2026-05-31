@@ -8,31 +8,24 @@ req_attributes = {
     "scalar_render": ["colormap"],
 }
 
-def validate(block, parent = None) -> bool:
+def validate(block, parent = None):
     block.attributes = {k.lower(): v.lower() if k != "source" else v for k, v in block.attributes.items()}
     for child in block.children: 
-        if not validate(child, block):
-            return False 
+        validate(child, block) 
     if (parent and parent.name != "root"):
         if parent.attributes.get("type") == "vector":
             for attribute in req_attributes["vec_render"]:
                 if attribute not in block.attributes:
-                    print(attribute, "Not in attributes of", block.name)
-                    return False
+                   raise ValueError(f"{attribute} not in attributes of {block.name}") 
         elif parent.attributes.get("type") == "scalar":
             for attribute in req_attributes["scalar_render"]:
                 if attribute not in block.attributes:
-                    print(attribute, "Not in attributes of", block.name)
-                    return False
+                    raise ValueError(f"{attribute} not in attributes of {block.name}")  
         else:
             if "type" not in block.attributes:
-                print("no type")
-                return False
+               raise ValueError(f"{block.name} has no type") 
             if block.attributes["type"] not in req_attributes:
-                print("Unknown type:", block.attributes["type"])
-                return False
+               raise ValueError(f"{block.attributes["type"]} not recognized") 
             for attribute in req_attributes[block.attributes["type"]]:
                 if attribute not in block.attributes:
-                    print(attribute, "Not in attributes of ", block.name) 
-                    return False 
-    return True
+                    raise ValueError(f"{attribute} not in attributes of {block.name}")  
