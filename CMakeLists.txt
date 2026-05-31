@@ -2,6 +2,7 @@
 cmake_minimum_required(VERSION 3.28)
 project(TREE)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if (NOT DEFINED ENV{BLENDER_PATH})
    message(FATAL_ERROR "BLENDER_PATH not set")
 endif()
@@ -23,5 +24,3 @@ pybind11_add_module(tree_core core/bindings.cpp core/build_mesh.cpp core/read.cp
 target_include_directories(tree_core PRIVATE core/integration)
 target_link_libraries(tree_core PRIVATE HDF5::HDF5 netCDF::netcdf)
 target_compile_options(tree_core PRIVATE -Wall -Wextra -g)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-

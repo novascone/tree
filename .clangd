@@ -1,0 +1,11 @@
+CompileFlags:
+  CompilationDatabase: build/
+
+Index:
+  Background: Build
+
+Completion:
+  AllScopes: false
+
+InlayHints:
+  Enabled: false
