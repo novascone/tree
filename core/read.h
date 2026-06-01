@@ -6,6 +6,14 @@
 #include <vector>
 #include <array>
 
+struct NetCDFFile {
+   
+   int file_id;
+
+   NetCDFFile(const std::string& file_path,  int NCFlag);
+   ~NetCDFFile();
+};
+
 struct Neighbor {
 
    public:

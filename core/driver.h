@@ -26,6 +26,6 @@ struct Derivative {
 
 Read load(FieldConfig field_config);
 
-StreamlineSet driveField(Read& loaded_data, std::vector<std::vector<double>>& seeds);
+StreamlineSet driveField(Read& loaded_data, std::vector<std::vector<double>>& seeds, double interval_start, double interval_end, double initial_step_size);
 
 #endif

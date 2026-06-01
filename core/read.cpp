@@ -7,35 +7,43 @@
 #include <cmath>
 #include <stdexcept>
 
+NetCDFFile::NetCDFFile(const std::string& file_path, int NCFlag) {
+   
+   int status = nc_open(file_path.c_str(), NCFlag, &file_id);
+   
+   if (status != NC_NOERR) throw std::runtime_error(nc_strerror(status));
+   
+}
+
+NetCDFFile::~NetCDFFile() {
+   
+   nc_close(file_id);
+}
+
 Read::Read(){}
 
 Read::Read(FieldConfig field_config) { 
    std::filesystem::path p(field_config.source);
    if (p.extension() == ".nc") {
-
-      int file_id;
-      int status = nc_open(field_config.source.c_str(), NC_NOWRITE, &file_id);
-
-      if (status != NC_NOERR) throw std::runtime_error(nc_strerror(status));
+ 
+      NetCDFFile netcdf_file(field_config.source, NC_NOWRITE);
 
       if (field_config.variables.has_value()) {
          for (const std::string& name : field_config.variables.value()) {  
-            values.push_back(readNetCDFVariable(file_id, name));
+            values.push_back(readNetCDFVariable(netcdf_file.file_id, name));
          }
       }
 
       if (field_config.coordinates.has_value()) {
          int i = 0;
          for (const std::string& name : field_config.coordinates.value()) {
-            coords.push_back(readNetCDFVariable(file_id, name));
+            coords.push_back(readNetCDFVariable(netcdf_file.file_id, name));
             hunt_threshold[i] = std::min(1, static_cast<int>(std::pow(static_cast<double>(coords[i].size()), 0.25)));
             saved_index[i] = 0;
             correlated[i] = 0; 
             i++;
          } 
-      }
-
-      nc_close(file_id);
+      } 
    }
 }
 

@@ -10,6 +10,7 @@ file(GLOB _python_bins "$ENV{BLENDER_PATH}/*/python/bin/python3*")
 list(FILTER _python_bins EXCLUDE REGEX "\\.py$")
 list(GET _python_bins 0 _python_exe)
 set(Python3_EXECUTABLE ${_python_exe} CACHE STRING "Blender Python")
+set(CMAKE_BUILD_TYPE Debug)
 include(FetchContent)
 FetchContent_Declare(
    pybind11
@@ -17,10 +18,20 @@ FetchContent_Declare(
    GIT_TAG v3.0.4
 )
 FetchContent_MakeAvailable(pybind11)
+FetchContent_Declare(
+   catch2
+   GIT_REPOSITORY https://github.com/catchorg/Catch2
+   GIT_TAG v3.7.1
+)
+FetchContent_MakeAvailable(catch2)
 find_package(HDF5 REQUIRED COMPONENTS C)
 find_package(netCDF REQUIRED)
-set(CMAKE_BUILD_TYPE Debug)
+enable_testing()
+add_executable(tree_tests core/read.cpp core/interp.cpp core/driver.cpp tests/interp_test.cpp tests/adaptiverk5_test.cpp)
+add_test(NAME tree_tests COMMAND tree_tests)
 pybind11_add_module(tree_core core/bindings.cpp core/build_mesh.cpp core/read.cpp core/interp.cpp core/driver.cpp)
 target_include_directories(tree_core PRIVATE core/integration)
+target_include_directories(tree_tests PRIVATE core core/integration)
 target_link_libraries(tree_core PRIVATE HDF5::HDF5 netCDF::netcdf)
+target_link_libraries(tree_tests PRIVATE HDF5::HDF5 netCDF::netcdf Catch2::Catch2WithMain)
 target_compile_options(tree_core PRIVATE -Wall -Wextra -g)
