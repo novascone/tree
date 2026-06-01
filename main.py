@@ -67,12 +67,3 @@ if __name__ == "__main__":
     #blender_mesh = blender.mesh.build_mesh(geometry)
     
 
-    
-    
-    
-
-
-
-
-
-

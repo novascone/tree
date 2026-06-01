@@ -9,7 +9,7 @@ endif()
 file(GLOB _python_bins "$ENV{BLENDER_PATH}/*/python/bin/python3*")
 list(FILTER _python_bins EXCLUDE REGEX "\\.py$")
 list(GET _python_bins 0 _python_exe)
-set(Python3_EXECUTABLE ${_python_exe} CACHE STRING "Blender Python")
+set(Python3_EXECUTABLE ${_python_exe} CACHE STRING "Blender Python" FORCE)
 set(CMAKE_BUILD_TYPE Debug)
 include(FetchContent)
 FetchContent_Declare(
