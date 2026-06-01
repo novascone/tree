@@ -14,8 +14,7 @@ PYBIND11_MAKE_OPAQUE(std::vector<std::string>);
 
 PYBIND11_MODULE(tree_core, m) {
    m.doc() = "TREE core module";
-   m.def("build_mesh", &buildMesh);
-   m.def("load", &load);
+   m.def("build_mesh", &buildMesh); 
    m.def("driveField", &driveField);
  
    py::bind_vector<std::vector<FieldConfig>>(m, "FieldConfigList");
@@ -89,6 +88,8 @@ PYBIND11_MODULE(tree_core, m) {
 
    py::class_<Read>(m, "Read")
       .def(py::init<FieldConfig>()) 
+      .def_readwrite("coords", &Read::coords)
+      .def_readwrite("values", &Read::values)
       .def("getNeighbors", &Read::getNeighbors);
  
 }

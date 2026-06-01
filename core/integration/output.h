@@ -3,6 +3,7 @@
 #define OUTPUT_H
 
 #include <vector>
+#include <stdexcept>
 
 struct Output {
    
@@ -68,7 +69,7 @@ struct Output {
    void out (const int num_steps, const double interval_pos, std::vector<double>& values, Stepper& stepper,
              const double step) {
 
-      if (!hermite_out) throw("Hermite output not set");
+      if (!hermite_out) throw std::runtime_error("Hermite output not set");
 
       if (num_steps == -1) {
          save(interval_pos, values);

@@ -17,14 +17,13 @@ struct Derivative {
    void operator()(const double, std::vector<double>& y, std::vector<double>& dydx) {
       
       std::vector<double> arbitrary = interp.interp({y[0], y[1], y[2]});
+      std::fill(dydx.begin(), dydx.end(), 0.0);
 
-      dydx[0] = arbitrary[0];
-      dydx[1] = arbitrary[1];
-      dydx[2] = arbitrary[2];
+      for (int i = 0; i < static_cast<int>(arbitrary.size()); i++) {
+         dydx[i] = arbitrary[i]; 
+      }
    }
 };
-
-Read load(FieldConfig field_config);
 
 StreamlineSet driveField(Read& loaded_data, std::vector<std::vector<double>>& seeds, double interval_start, double interval_end, double initial_step_size);
 

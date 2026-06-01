@@ -7,6 +7,7 @@
 #include <limits>
 #include <cmath>
 #include <vector>
+#include <stdexcept>
 
 template <class D>
 struct AdaptiveRK5 : Stepper { // Dormand-Prince 5th order Runge-Kutta step monitoring local truncation
@@ -70,8 +71,8 @@ void AdaptiveRK5<D>::step(const double try_step, D& derivative) {
    double err = error();
       
    while (!controller.success(err, step)) {
-      if (interval_position == 0.0 && std::abs(step) <= mach_eps) throw("step too small"); 
-      else if (std::abs(step / interval_position)  <= mach_eps) throw("step too small");
+      if (interval_position == 0.0 && std::abs(step) <= mach_eps) throw std::runtime_error("step too small"); 
+      else if (std::abs(step / interval_position)  <= mach_eps) throw std::runtime_error("step too small");
       rungeKutta(step, derivative);
       err = error();
    }

@@ -1,7 +1,7 @@
 
 import sys
-import tree_core
 sys.path.insert(0, 'build')
+import tree_core
 from parser.lex import lex 
 from parser.parse import parse 
 from parser.validate import validate  
@@ -48,9 +48,17 @@ if __name__ == "__main__":
     print("Length of positions: ", len(geometry.positions))
     print("Length of faces: ", len(geometry.faces))
     read = tree_core.Read(tree_config.fields[0])
+    print(f"Coords size {len(read.coords)}")
+    print(f"Values size {len(read.values)}")
+    print(f"Coord array 0 size {len(read.coords[0])}")
+    print(f"Coord array 1 size {len(read.coords[1])}")
+    print(f"Coord array 2 size {len(read.coords[2])}")
+    print(f"Value array size {len(read.values)}")
+    print(f"Values 0 size {len(read.values[0])}")
+
     seeds = [[0.0, 0.0, 86], [30.0, 90.0, 86.0]]
         
-    streamline_set = tree_core.driveField(read, seeds)
+    streamline_set = tree_core.driveField(read, seeds, 0.0, 1.0, 0.1)
     
     for i in range(len(streamline_set)):
         for j in range(len(streamline_set[i])):

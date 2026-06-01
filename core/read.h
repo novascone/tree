@@ -27,13 +27,13 @@ class Read {
    private:
    std::array<int, 3> hunt_threshold;
    std::array<int, 3> saved_index; 
+   std::array<int, 3> correlated;
    std::vector<double> readNetCDFVariable(int file_id, const std::string& name); 
    int convertIDXFlat(int index0, int index1, int index2, int dim1, int dim2);
    
    public:
    std::vector<std::vector<double>> coords;
-   std::vector<std::vector<double>> values; 
-   std::array<int, 3> correlated;
+   std::vector<std::vector<double>> values;  
    Read();
    Read(FieldConfig field_config);
    std::vector<Neighbor> getNeighbors(std::array<double, 3> position);

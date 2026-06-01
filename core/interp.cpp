@@ -9,15 +9,20 @@ std::vector<double> TriInterp::interp(std::array<double, 3> position) {
    double u {};
    double v {};
 
+   int x_high_index = 4;
+   int y_high_index = 2;
+   int z_high_index = 1;
+   int low_index = 0;
+
    std::vector<double> interp_value {};
 
    std::vector<Neighbor> neighbors = loaded_data.getNeighbors(position);
 
    interp_value.resize(neighbors[0].values.size());
    
-   t = (position[0] - neighbors[0].coords[0]) / (neighbors[4].coords[0] - neighbors[0].coords[0]);   
-   u = (position[1] - neighbors[0].coords[1]) / (neighbors[2].coords[1] - neighbors[0].coords[1]);
-   v = (position[2] - neighbors[0].coords[2]) / (neighbors[1].coords[2] - neighbors[0].coords[2]);
+   t = (position[0] - neighbors[0].coords[0]) / (neighbors[x_high_index].coords[0] - neighbors[low_index].coords[0]);   
+   u = (position[1] - neighbors[0].coords[1]) / (neighbors[y_high_index].coords[1] - neighbors[low_index].coords[1]);
+   v = (position[2] - neighbors[0].coords[2]) / (neighbors[z_high_index].coords[2] - neighbors[low_index].coords[2]);
    
    for (int i = 0; i < static_cast<int>(neighbors[0].values.size()); i++) {
       interp_value[i] = (1-t) * (1-u) * (1-v) * neighbors[0].values[i]
