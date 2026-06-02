@@ -18,6 +18,6 @@ conda run -n tree cmake --build $REPO_DIR/build
 
 SO_PATH=($REPO_DIR/build/tree_core*.so)
 
-ln -sf ${SO_PATH[0]} $REPO_DIR/blender/
+cp ${SO_PATH[0]} $REPO_DIR/blender/
 
 echo "Activate the tree environment (conda activate tree), if activated deactivate (conda deactivate), and activate again"

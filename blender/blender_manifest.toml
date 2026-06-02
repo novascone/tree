@@ -1,0 +1,14 @@
+
+schema_version = "1.0.0"
+
+id = "tree"
+version = "0.0.1"
+name = "TREE"
+tagline = "Three-dimensional Rendered Ensemble Environment"
+maintainer = "Warren Novascone"
+
+type = "add-on"
+
+blender_version_min = "4.2.0"
+
+license = [ "SPDX:GPL-3.0-or-later" ]

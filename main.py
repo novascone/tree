@@ -2,11 +2,11 @@
 import sys
 sys.path.insert(0, 'build')
 import tree_core
-from parser.lex import lex 
-from parser.parse import parse 
-from parser.validate import validate  
-from parser.convert import convert 
-from parser.translate import translate 
+from blender.parser.lex import lex 
+from blender.parser.parse import parse 
+from blender.parser.validate import validate  
+from blender.parser.convert import convert 
+from blender.parser.translate import translate 
 #import blender.mesh
 
 def print_tree(blocks):
