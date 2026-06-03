@@ -12,7 +12,7 @@ StreamlineSet driveField(Read& loaded_data, std::vector<std::vector<double>>& se
 
    StreamlineSet results(static_cast<int>(seeds.size()));
    TriInterp triInterp(loaded_data); 
-   Derivative derivative(triInterp);
+   Derivative derivative(triInterp, true);
    int i = 0;
    for (std::vector<double> query : seeds) {
       Output out(0); 

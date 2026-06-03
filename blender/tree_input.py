@@ -10,6 +10,7 @@ from bpy.props import StringProperty, FloatProperty, PointerProperty
 from bpy.types import Operator
 import bpy
 import colorsys
+import math
 
 geometry = None
 read = None
@@ -70,6 +71,20 @@ class ComputeStreamlines(Operator):
         streamlines = tree_core.driveField(read, seeds, props.interval_start, props.interval_end, props.step_size)
         return {'FINISHED'}
 
+def convert_to_cart(lat, lon, alt):
+    lat_r = math.radians(lat)
+    lon_r = math.radians(lon)
+    R = 6371.0
+    r = (R + alt) / R
+    x = r * math.cos(lat_r) * math.cos(lon_r)
+    y = r * math.cos(lat_r) * math.sin(lon_r)
+    z = r * math.sin(lat_r)
+
+    return x, y, z
+
+
+
+
 class VisualizeStreamlines(Operator):
     """Create the curve objects"""
     bl_idname = "tree.visualize_streamlines"
@@ -99,12 +114,13 @@ class VisualizeStreamlines(Operator):
         for i, streamline in enumerate(streamlines):
             curve_data = bpy.data.curves.new(f'streamline_{i}', type='CURVE')
             curve_data.dimensions = '3D'
-            curve_data.bevel_depth = 0.05
+            curve_data.bevel_depth = 0.001
             curve_data.bevel_resolution = 0
             spline = curve_data.splines.new('POLY')
             spline.points.add(len(streamline) -1)
             for j, point in enumerate(streamline):
-                spline.points[j].co = (point[0], point[1], point[2], 1.0)
+                x, y, z = convert_to_cart(point[0], point[1], point[2])
+                spline.points[j].co = (x, y, z, 1.0)
             obj = bpy.data.objects.new(f'streamline{i}', curve_data)
             obj.data.materials.append(mat)
             streamline_collection.objects.link(obj)
