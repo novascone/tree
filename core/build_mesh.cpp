@@ -34,9 +34,9 @@ namespace {
       for (int i = 0; i <= rows - 1; i++) {
          for(int j = 0; j <= cols - 1; j++) {
             sphere.faces[(i * cols + j) * 4] = i * (cols + 1) + j;
-            sphere.faces[(i * cols + j) * 4 + 1] = (i + 1) * (cols + 1) + j;
-            sphere.faces[(i * cols + j) * 4 + 2] = i * (cols + 1) + j + 1;
-            sphere.faces[(i * cols + j) * 4 + 3] = (i + 1) * (cols + 1) + j + 1;
+            sphere.faces[(i * cols + j) * 4 + 1] = i * (cols + 1) + j + 1; 
+            sphere.faces[(i * cols + j) * 4 + 2] = (i + 1) * (cols + 1) + j + 1; 
+            sphere.faces[(i * cols + j) * 4 + 3] = (i + 1) * (cols + 1) + j;
          }
       }
    
