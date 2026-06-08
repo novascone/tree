@@ -112,17 +112,15 @@ def convert_to_cart(lat, lon, alt):
     return x, y, z
 
 
-def mat_nodes(context):
-
-    n = len([c for c in bpy.data.collections if c.name.startswith('run_')])
-    streamline_collection = bpy.data.collections.new(f'run_{n}')
+def mat_nodes(context, i, alt):
+ 
     props = context.scene.tree_props
-    streamline_collection['interval_start'] = props.interval_start
-    streamline_collection['interval_end'] = props.interval_end
-    streamline_collection['step_size'] = props.step_size
-    mat = bpy.data.materials.new(f'run_{n}')
+    #streamline_collection['interval_start'] = props.interval_start
+    #streamline_collection['interval_end'] = props.interval_end
+    #streamline_collection['step_size'] = props.step_size
+    mat = bpy.data.materials.new(f'alt_{alt}_km')
     mat.use_nodes = True
-    hue = (n * 0.618033988749895) % 1
+    hue = (i * 0.618033988749895) % 1
     r, g, b = colorsys.hsv_to_rgb(hue, 0.8, 0.9)
     
     nodes = mat.node_tree.nodes
@@ -208,9 +206,7 @@ def mat_nodes(context):
     links.new(emission.outputs['Emission'], output.inputs['Surface'])
 
     mat.diffuse_color = (r, g, b, 1.0)
-    bpy.context.scene.collection.children.link(streamline_collection)
-
-    return mat, streamline_collection, n
+    return mat
 
 def arc_length(cart_points):
     lengths = [0.0]
@@ -227,27 +223,40 @@ class VisualizeStreamlines(Operator):
     bl_idname = "tree.visualize_streamlines"
     bl_label = "Visualize Streamlines"
 
-    def execute(self, context): 
-        mat, streamline_collection, n = mat_nodes(context)
-        curve_data = bpy.data.hair_curves.new(f'run_{n}_curves')
-        curve_data.add_curves([len(s) for s in streamlines])
-        attr = curve_data.attributes.new('arc_param', 'FLOAT', 'POINT')
-        radius_attr = curve_data.attributes.new('radius', 'FLOAT', 'POINT')
-        phase_attr = curve_data.attributes.new('phase', 'FLOAT', 'CURVE')
-        point_idx = 0
-        for i, streamline in enumerate(streamlines): 
-            cart_points = [convert_to_cart(p[0], p[1], p[2]) for p in streamline]
-            stream_lens = arc_length(cart_points)
-            phase_attr.data[i].value = random.random()
-            for j, point in enumerate(cart_points):
-                x, y, z = point
-                curve_data.position_data[point_idx].vector = (x, y, z)
-                attr.data[point_idx].value = stream_lens[j] / stream_lens[-1] if stream_lens[-1] > 0 else 0.0  
-                radius_attr.data[point_idx].value = 0.1
-                point_idx += 1
-        obj = bpy.data.objects.new(f'run_{n}', curve_data)
-        obj.data.materials.append(mat)
-        streamline_collection.objects.link(obj)
+    def execute(self, context):
+        n = len([c for c in bpy.data.collections if c.name.startswith('run_')])
+        streamline_collection = bpy.data.collections.new(f'run_{n}')
+        bpy.context.scene.collection.children.link(streamline_collection)
+        alt_min = context.scene.tree_props.alt_min
+        alt_step = context.scene.tree_props.alt_step
+        alt_max = context.scene.tree_props.alt_max 
+        alts = [alt_min] 
+        while alts[-1] + alt_step <= alt_max + 1e-6:
+            alts.append(alts[-1] + alt_step)
+        for i, alt in enumerate(alts):
+            mat = mat_nodes(context, i, alt)
+            alt_collection = bpy.data.collections.new(f'{alts[i]}_km')
+            streamline_collection.children.link(alt_collection) 
+            point_idx = 0
+            alt_streams = [s for s in streamlines if abs(s[0][2] - alt) < 0.01]
+            curve_data = bpy.data.hair_curves.new(f'alt{alt}_curves')
+            curve_data.add_curves([len(s) for s in alt_streams]) 
+            attr = curve_data.attributes.new('arc_param', 'FLOAT', 'POINT')
+            radius_attr = curve_data.attributes.new('radius', 'FLOAT', 'POINT')
+            phase_attr = curve_data.attributes.new('phase', 'FLOAT', 'CURVE') 
+            for j, streamline in enumerate(alt_streams):   
+                cart_points = [convert_to_cart(p[0], p[1], p[2]) for p in streamline]
+                stream_lens = arc_length(cart_points)
+                phase_attr.data[j].value = random.random()
+                for k, point in enumerate(cart_points):
+                    x, y, z = point
+                    curve_data.position_data[point_idx].vector = (x, y, z)
+                    attr.data[point_idx].value = stream_lens[k] / stream_lens[-1] if stream_lens[-1] > 0 else 0.0  
+                    radius_attr.data[point_idx].value = 0.1
+                    point_idx += 1 
+            obj = bpy.data.objects.new(f'alt_{alt}_km', curve_data)
+            obj.data.materials.append(mat)
+            alt_collection.objects.link(obj)
         return {'FINISHED'}
 
 class TREE_PT_panel(bpy.types.Panel):
