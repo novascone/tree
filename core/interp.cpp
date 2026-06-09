@@ -1,7 +1,112 @@
 
 #include "interp.h"
 
-TriInterp::TriInterp(Read& data) : loaded_data(data) {}
+TriInterp::TriInterp(Read& data) : loaded_data(data), saved_index{}, correlated{} {
+
+for (int i = 0; i < 3; i++) {
+   hunt_threshold[i] = std::min(1, static_cast<int>(std::pow(static_cast<double>(loaded_data.coords[i].size()), 0.25)));
+   }
+}
+
+int TriInterp::locate(int axis, const std::vector<double>& axis_line, double query) {
+    
+   int new_saved = loaded_data.bisection(axis_line, query);
+   correlated[axis] = (std::abs(saved_index[axis] - new_saved) <= hunt_threshold[axis]) ? 1 : 0;
+   saved_index[axis] = new_saved;
+   
+   return saved_index[axis];
+}
+
+std::array<int, 2> TriInterp::hunting(int axis, const std::vector<double>& axis_line, double query) {
+
+   int index_low = saved_index[axis]; 
+   int index_high = saved_index[axis]; 
+   int n = static_cast<int>(axis_line.size());
+   int inc = 1;
+
+   bool ascending = (axis_line[n-1] >= axis_line[index_low]) ? true : false;
+   
+   if (ascending) {
+      if (query >= axis_line[index_low]){
+         while (query >= axis_line[index_high]) { // hunt up
+            index_high += inc;
+            if (index_high > n-1) {
+               index_high = n-1;
+               break;
+            }
+            inc*=2;
+         }
+      }
+      else {
+         while (query <= axis_line[index_low]) { // hunt down
+            index_low -= inc;
+            if (index_low < 0) {
+               index_low = 0;
+               break;
+            }
+            inc*=2;
+         } 
+      }
+   }
+   else {
+      if (query <= axis_line[index_low]){
+         while (query <= axis_line[index_high]) { // hunt up
+            index_high += inc;
+            if (index_high > n-1) {
+               index_high = n-1;
+               break;
+            }
+            inc*=2;
+         }
+      }
+      else {
+         while (query >= axis_line[index_low]) { // hunt down
+            index_low -= inc;
+            if (index_low < 0) {
+               index_low = 0;
+               break;
+            }
+            inc*=2;
+         } 
+      }
+   }
+   return {index_low, index_high};
+}
+
+int TriInterp::hunt(int axis, const std::vector<double>& axis_line, double query) {
+
+   std::array<int, 2> trophy = TriInterp::hunting(axis, axis_line, query);
+   int new_saved = loaded_data.bisection(axis_line, query, trophy[0], trophy[1]);
+   correlated[axis] = (std::abs(saved_index[axis] - new_saved) <= hunt_threshold[axis]) ? 1 : 0;
+   saved_index[axis] = new_saved; 
+   
+   return saved_index[axis]; 
+}
+
+std::vector<Neighbor> TriInterp::getNeighbors(std::array<double, 3> position) {
+
+   std::vector<Neighbor> neighbors;
+   int neighbor_index_0 = correlated[0] ? hunt(0, loaded_data.coords[0], position[0]) : locate(0, loaded_data.coords[0], position[0]);
+   int neighbor_index_1 = correlated[1] ? hunt(1, loaded_data.coords[1], position[1]) : locate(1, loaded_data.coords[1], position[1]);
+   int neighbor_index_2 = correlated[2] ? hunt(2, loaded_data.coords[2], position[2]) : locate(2, loaded_data.coords[2], position[2]); 
+   for (int i = 0; i <= 1; i++) {
+      for (int j = 0; j <= 1; j++) {
+         for (int k = 0; k <= 1; k++) {
+            Neighbor neighbor;
+            neighbor.coords[0] = loaded_data.coords[0][neighbor_index_0 + i];
+            neighbor.coords[1] = loaded_data.coords[1][neighbor_index_1 + j];
+            neighbor.coords[2] = loaded_data.coords[2][neighbor_index_2 + k];
+            int index = loaded_data.convertIDXFlat(neighbor_index_0 + i, neighbor_index_1 + j, neighbor_index_2 + k,
+                                       static_cast<int>(loaded_data.coords[1].size()), static_cast<int>(loaded_data.coords[2].size()));
+            for ( const std::vector<double>& var : loaded_data.values) {
+               neighbor.values.push_back(var[index]);
+            }
+            neighbors.push_back(neighbor);
+         }
+      }
+   }
+   return neighbors; 
+}
 
 std::vector<double> TriInterp::interp(std::array<double, 3> position) {
 
@@ -16,7 +121,7 @@ std::vector<double> TriInterp::interp(std::array<double, 3> position) {
 
    std::vector<double> interp_value {};
 
-   std::vector<Neighbor> neighbors = loaded_data.getNeighbors(position);
+   std::vector<Neighbor> neighbors = getNeighbors(position);
 
    interp_value.resize(neighbors[0].values.size());
    
