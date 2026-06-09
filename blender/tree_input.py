@@ -117,13 +117,13 @@ def convert_to_cart(lats, lons, alts):
     return x, y, z
 
 
-def mat_nodes(context, i, alt):
+def mat_nodes(context, i):
  
     props = context.scene.tree_props
     #streamline_collection['interval_start'] = props.interval_start
     #streamline_collection['interval_end'] = props.interval_end
     #streamline_collection['step_size'] = props.step_size
-    mat = bpy.data.materials.new(f'alt_{alt}_km')
+    mat = bpy.data.materials.new(f'mat_{i}')
     mat.use_nodes = True
     hue = (i * 0.618033988749895) % 1
     r, g, b = colorsys.hsv_to_rgb(hue, 0.8, 0.9)
@@ -218,6 +218,61 @@ def arc_length(points):
     norms = np.linalg.norm(diffs, axis=1)
     lengths= np.concatenate([[0.0], np.cumsum(norms)])
     return lengths
+
+def gen_field_lines_viz(context):
+    n = len([c for c in bpy.data.collections if c.name.startswith('run_')])
+    streamline_collection = bpy.data.collections.new(f'run_{n}')
+    bpy.context.scene.collection.children.link(streamline_collection)
+    t_mat = 0.0
+    t_points = 0.0 
+    t0 = time.perf_counter()
+    mat = mat_nodes(context, n)
+    t_mat += time.perf_counter() - t0
+             
+    
+
+    x = np.array([p[0] for s in streamlines for p in s])
+    y = np.array([p[1] for s in streamlines for p in s])
+    z = np.array([p[2] for s in streamlines for p in s])
+ 
+    flat_x_y_z = np.stack([x, y, z], axis=1).flatten()
+
+    t0 = time.perf_counter()
+
+    curve_data = bpy.data.hair_curves.new(f'curves')
+    curve_data.add_curves([len(s) for s in streamlines]) 
+    arc_attr = curve_data.attributes.new('arc_param', 'FLOAT', 'POINT')
+    radius_attr = curve_data.attributes.new('radius', 'FLOAT', 'POINT')
+    phase_attr = curve_data.attributes.new('phase', 'FLOAT', 'CURVE') 
+             
+    flat_phase = np.array([random.random() for s in streamlines])
+    total_points = sum(len(s) for s in streamlines)
+    flat_radius = np.full(total_points, 0.1)
+    curve_data.position_data.foreach_set('vector', flat_x_y_z)
+    phase_attr.data.foreach_set('value', flat_phase)
+    radius_attr.data.foreach_set('value', flat_radius)
+    
+    arc_segments = []
+    for s in streamlines:
+        pts = np.stack([
+                        np.array([p[0] for p in s]),
+                        np.array([p[1] for p in s]),
+                        np.array([p[2] for p in s])] , axis=1)
+        lens = arc_length(pts)
+        arc_segments.append(lens / lens[-1])
+    flat_arc = np.concatenate(arc_segments)
+
+    arc_attr.data.foreach_set('value', flat_arc)
+
+
+    obj = bpy.data.objects.new(f'curve', curve_data)
+    obj.data.materials.append(mat)
+    streamline_collection.objects.link(obj)
+    t_points += time.perf_counter() - t0
+            
+    print(f"mat: {t_mat:.3f}s points: {t_points:.3f}s")
+    return {'FINISHED'}
+
     
 class VisualizeStreamlines(Operator):
     """Create the curve objects"""
@@ -238,7 +293,7 @@ class VisualizeStreamlines(Operator):
         t_points = 0.0
         for i, alt in enumerate(alts):
             t0 = time.perf_counter()
-            mat = mat_nodes(context, i, alt)
+            mat = mat_nodes(context, i)
             t_mat += time.perf_counter() - t0
             alt_collection = bpy.data.collections.new(f'{alts[i]}_km')
             streamline_collection.children.link(alt_collection) 
