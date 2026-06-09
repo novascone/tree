@@ -14,6 +14,7 @@ import colorsys
 import math
 import random
 import time
+import numpy as np
 
 geometry = None
 read = None
@@ -104,14 +105,14 @@ class ComputeStreamlines(Operator):
         print(f"Integration: {t1 - t0:.3f}s")
         return {'FINISHED'}
 
-def convert_to_cart(lat, lon, alt):
-    lat_r = math.radians(lat)
-    lon_r = math.radians(lon)
+def convert_to_cart(lats, lons, alts):
+    lat_r = np.radians(lats)
+    lon_r = np.radians(lons)
     R = 6371.0
-    r = (R + alt) / R
-    x = r * math.cos(lat_r) * math.cos(lon_r)
-    y = r * math.cos(lat_r) * math.sin(lon_r)
-    z = r * math.sin(lat_r)
+    r = (R + alts) / R
+    x = r * np.cos(lat_r) * np.cos(lon_r)
+    y = r * np.cos(lat_r) * np.sin(lon_r)
+    z = r * np.sin(lat_r)
 
     return x, y, z
 
@@ -212,16 +213,12 @@ def mat_nodes(context, i, alt):
     mat.diffuse_color = (r, g, b, 1.0)
     return mat
 
-def arc_length(cart_points):
-    lengths = [0.0]
-    for i in range(1, len(cart_points)):
-        dx = cart_points[i][0] - cart_points[i-1][0]
-        dy = cart_points[i][1] - cart_points[i-1][1]
-        dz = cart_points[i][2] - cart_points[i-1][2]
-        lengths.append(lengths[-1] + math.sqrt(dx**2 + dy**2 + dz**2))
+def arc_length(points):
+    diffs = np.diff(points, axis=0)
+    norms = np.linalg.norm(diffs, axis=1)
+    lengths= np.concatenate([[0.0], np.cumsum(norms)])
     return lengths
     
-
 class VisualizeStreamlines(Operator):
     """Create the curve objects"""
     bl_idname = "tree.visualize_streamlines"
@@ -238,7 +235,6 @@ class VisualizeStreamlines(Operator):
         while alts[-1] + alt_step <= alt_max + 1e-6:
             alts.append(alts[-1] + alt_step)
         t_mat = 0.0
-        t_alloc = 0.0
         t_points = 0.0
         for i, alt in enumerate(alts):
             t0 = time.perf_counter()
@@ -246,31 +242,51 @@ class VisualizeStreamlines(Operator):
             t_mat += time.perf_counter() - t0
             alt_collection = bpy.data.collections.new(f'{alts[i]}_km')
             streamline_collection.children.link(alt_collection) 
-            point_idx = 0
+            
             alt_streams = [s for s in streamlines if len(s) > 0.0 and abs(s[0][2] - alt) < 0.01]
+
+            lats_np = np.array([p[0] for s in alt_streams for p in s])
+            lons_np = np.array([p[1] for s in alt_streams for p in s])
+            alts_np = np.array([p[2] for s in alt_streams for p in s])
+
+            x, y, z = convert_to_cart(lats_np, lons_np, alts_np)
+            flat_x_y_z = np.stack([x, y, z], axis=1).flatten()
+
             t0 = time.perf_counter()
+
             curve_data = bpy.data.hair_curves.new(f'alt{alt}_curves')
             curve_data.add_curves([len(s) for s in alt_streams]) 
-            attr = curve_data.attributes.new('arc_param', 'FLOAT', 'POINT')
+            arc_attr = curve_data.attributes.new('arc_param', 'FLOAT', 'POINT')
             radius_attr = curve_data.attributes.new('radius', 'FLOAT', 'POINT')
             phase_attr = curve_data.attributes.new('phase', 'FLOAT', 'CURVE') 
-            t_alloc += time.perf_counter() - t0
-            for j, streamline in enumerate(alt_streams):
-                t0 = time.perf_counter()
-                cart_points = [convert_to_cart(p[0], p[1], p[2]) for p in streamline]
-                stream_lens = arc_length(cart_points)
-                phase_attr.data[j].value = random.random()
-                for k, point in enumerate(cart_points):
-                    x, y, z = point
-                    curve_data.position_data[point_idx].vector = (x, y, z)
-                    attr.data[point_idx].value = stream_lens[k] / stream_lens[-1] if stream_lens[-1] > 0 else 0.0  
-                    radius_attr.data[point_idx].value = 0.1
-                    point_idx += 1
-                t_points += time.perf_counter() - t0
+             
+            flat_phase = np.array([random.random() for s in alt_streams])
+            total_points = sum(len(s) for s in alt_streams)
+            flat_radius = np.full(total_points, 0.1)
+            curve_data.position_data.foreach_set('vector', flat_x_y_z)
+            phase_attr.data.foreach_set('value', flat_phase)
+            radius_attr.data.foreach_set('value', flat_radius)
+
+            arc_segments = []
+            for s in alt_streams:
+                pts = np.stack(convert_to_cart(
+                               np.array([p[0] for p in s]),
+                               np.array([p[1] for p in s]),
+                               np.array([p[2] for p in s])
+                ), axis=1)
+                lens = arc_length(pts)
+                arc_segments.append(lens / lens[-1])
+            flat_arc = np.concatenate(arc_segments)
+
+            arc_attr.data.foreach_set('value', flat_arc)
+
+
             obj = bpy.data.objects.new(f'alt_{alt}_km', curve_data)
             obj.data.materials.append(mat)
             alt_collection.objects.link(obj)
-        print(f"mat: {t_mat:.3f}s alloc: {t_alloc:.3f}s points: {t_points:.3f}s")
+            t_points += time.perf_counter() - t0
+            
+        print(f"mat: {t_mat:.3f}s points: {t_points:.3f}s")
         return {'FINISHED'}
 
 class TREE_PT_panel(bpy.types.Panel):
