@@ -10,7 +10,7 @@ for (int i = 0; i < 3; i++) {
 
 int TriInterp::locate(int axis, const std::vector<double>& axis_line, double query) {
     
-   int new_saved = loaded_data.bisection(axis_line, query);
+   int new_saved = Read::bisection(axis_line, query);
    correlated[axis] = (std::abs(saved_index[axis] - new_saved) <= hunt_threshold[axis]) ? 1 : 0;
    saved_index[axis] = new_saved;
    
@@ -76,7 +76,7 @@ std::array<int, 2> TriInterp::hunting(int axis, const std::vector<double>& axis_
 int TriInterp::hunt(int axis, const std::vector<double>& axis_line, double query) {
 
    std::array<int, 2> trophy = TriInterp::hunting(axis, axis_line, query);
-   int new_saved = loaded_data.bisection(axis_line, query, trophy[0], trophy[1]);
+   int new_saved = Read::bisection(axis_line, query, trophy[0], trophy[1]);
    correlated[axis] = (std::abs(saved_index[axis] - new_saved) <= hunt_threshold[axis]) ? 1 : 0;
    saved_index[axis] = new_saved; 
    
@@ -92,15 +92,17 @@ std::vector<Neighbor> TriInterp::getNeighbors(std::array<double, 3> position) {
    for (int i = 0; i <= 1; i++) {
       for (int j = 0; j <= 1; j++) {
          for (int k = 0; k <= 1; k++) {
-            Neighbor neighbor;
-            neighbor.coords[0] = loaded_data.coords[0][neighbor_index_0 + i];
-            neighbor.coords[1] = loaded_data.coords[1][neighbor_index_1 + j];
-            neighbor.coords[2] = loaded_data.coords[2][neighbor_index_2 + k];
-            int index = loaded_data.convertIDXFlat(neighbor_index_0 + i, neighbor_index_1 + j, neighbor_index_2 + k,
+            std::array<double, 3> coords {}; 
+            coords[0] = loaded_data.coords[0][neighbor_index_0 + i];
+            coords[1] = loaded_data.coords[1][neighbor_index_1 + j];
+            coords[2] = loaded_data.coords[2][neighbor_index_2 + k];
+            int index = Read::convertIDXFlat(neighbor_index_0 + i, neighbor_index_1 + j, neighbor_index_2 + k,
                                        static_cast<int>(loaded_data.coords[1].size()), static_cast<int>(loaded_data.coords[2].size()));
+            std::vector<double> values;
             for ( const std::vector<double>& var : loaded_data.values) {
-               neighbor.values.push_back(var[index]);
+               values.push_back(var[index]);
             }
+            Neighbor neighbor(coords, values);
             neighbors.push_back(neighbor);
          }
       }

@@ -83,13 +83,13 @@ PYBIND11_MODULE(tree_core, m) {
       .def_readwrite("faces", &Mesh::faces);
 
    py::class_<Neighbor>(m, "Neighbor")
-      .def_readwrite("coords", &Neighbor::coords)
-      .def_readwrite("values", &Neighbor::values);
+      .def_readonly("coords", &Neighbor::coords)
+      .def_readonly("values", &Neighbor::values);
 
    py::class_<Read>(m, "Read")
       .def(py::init<FieldConfig>()) 
-      .def_readwrite("coords", &Read::coords)
-      .def_readwrite("values", &Read::values);  
+      .def_readonly("coords", &Read::coords)
+      .def_readonly("values", &Read::values);  
 }
    
 

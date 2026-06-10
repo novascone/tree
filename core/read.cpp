@@ -6,39 +6,58 @@
 #include <cmath>
 #include <stdexcept>
 
-NetCDFFile::NetCDFFile(const std::string& file_path, int NCFlag) {
+NetCDFFile::NetCDFFile(const std::string& file_path, int NCFlag): file_id(Read::openNetCDF(file_path, NCFlag)) {}
    
-   int status = nc_open(file_path.c_str(), NCFlag, &file_id);
-   
-   if (status != NC_NOERR) throw std::runtime_error(nc_strerror(status));
-   
-}
-
 NetCDFFile::~NetCDFFile() {
    
    nc_close(file_id);
 }
 
+int Read::openNetCDF(const std::string& file_path, int NCFlag) {
+
+   int file_id;
+   int status = nc_open(file_path.c_str(), NCFlag, &file_id);
+   
+   if (status != NC_NOERR) throw std::runtime_error(nc_strerror(status));
+
+   return file_id;
+}
+
 Read::Read(){}
 
-Read::Read(FieldConfig field_config) { 
+Read::Read(std::vector<std::vector<double>> coords_p, std::vector<std::vector<double>> values_p): coords(coords_p), values(values_p) {}
+
+Read::Read(const FieldConfig& field_config_p): coords(loadNetCDFCoords(field_config_p)), values(loadNetCDFValues(field_config_p)) {}
+
+std::vector<std::vector<double>> Read::loadNetCDFValues(const FieldConfig& field_config) {
    std::filesystem::path p(field_config.source);
+   std::vector<std::vector<double>> NetCDF_values;
    if (p.extension() == ".nc") {
  
-      NetCDFFile netcdf_file(field_config.source, NC_NOWRITE);
+      NetCDFFile netcdf_file(field_config.source, NC_NOWRITE);    
 
       if (field_config.variables.has_value()) {
          for (const std::string& name : field_config.variables.value()) {  
-            values.push_back(readNetCDFVariable(netcdf_file.file_id, name));
+            NetCDF_values.push_back(readNetCDFVariable(netcdf_file.file_id, name));
          }
-      }
+      } 
+   }
+   return NetCDF_values;
+}
+
+std::vector<std::vector<double>> Read::loadNetCDFCoords(const FieldConfig& field_config) {
+   std::filesystem::path p(field_config.source);
+   std::vector<std::vector<double>> NetCDF_coords;
+   if (p.extension() == ".nc") { 
+      NetCDFFile netcdf_file(field_config.source, NC_NOWRITE);  
 
       if (field_config.coordinates.has_value()) {
          for (const std::string& name : field_config.coordinates.value()) {
-            coords.push_back(readNetCDFVariable(netcdf_file.file_id, name)); 
+            NetCDF_coords.push_back(readNetCDFVariable(netcdf_file.file_id, name)); 
          } 
       } 
    }
+   return NetCDF_coords;
 }
 
 std::vector<double> Read::readNetCDFVariable(int file_id, const std::string& name) {

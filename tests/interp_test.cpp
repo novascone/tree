@@ -5,10 +5,10 @@
 #include "read.h"
 
 TEST_CASE("TriLinear interp test") {
-   
-   Read read;
-   read.coords = {{0.0, 1.0}, {0.0, 1.0}, {0.0, 1.0}};
-   read.values = {{0, 0, 0, 0, 1, 1, 1, 1}}; 
+    
+   std::vector<std::vector<double>> coords = {{0.0, 1.0}, {0.0, 1.0}, {0.0, 1.0}};
+   std::vector<std::vector<double>> values = {{0, 0, 0, 0, 1, 1, 1, 1}}; 
+   Read read(coords, values);
 
    TriInterp tri_interp(read);
 
