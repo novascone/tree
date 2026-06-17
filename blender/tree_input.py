@@ -68,6 +68,14 @@ class TREEProperties(bpy.types.PropertyGroup):
     anim_speed: FloatProperty(name="Anim Speed", default=0.01, min=0.001, max=1.0)
     spot_width: FloatProperty(name="Spot Width", default=0.1, min=0.01, max=1.0) 
     spot_strength: FloatProperty(name="Spot Strength", default=1.0)
+    color_mode: EnumProperty(
+        name="Color Mode",
+        items=[
+            ('BLUE_RED', "Blue Red", ""),
+            ('VIRIDIS', "VIRIDIS", ""),
+        ],
+        default='BLUE_RED'
+    )
     seeding_mode: EnumProperty(
             name="Seeding Mode",
             items=[
@@ -236,10 +244,24 @@ def mat_nodes(context, i):
     speed_attr.attribute_type = 'GEOMETRY'
 
     color_ramp = nodes.new('ShaderNodeValToRGB')
-    color_ramp.color_ramp.elements[0].position = 0.0
-    color_ramp.color_ramp.elements[0].color = (0, 0, 1, 1)
-    color_ramp.color_ramp.elements[1].position = 1.0
-    color_ramp.color_ramp.elements[1].color = (1, 0, 0, 1)
+    if props.color_mode == 'BLUE_RED':
+        color_ramp.color_ramp.elements[0].position = 0.0
+        color_ramp.color_ramp.elements[0].color = (0, 0, 1, 1)
+        color_ramp.color_ramp.elements[1].position = 1.0
+        color_ramp.color_ramp.elements[1].color = (1, 0, 0, 1)
+    elif props.color_mode == 'VIRIDIS':
+        color_ramp.color_ramp.elements[0].position = 0.0
+        color_ramp.color_ramp.elements[0].color = (0.267, 0.004, 0.329, 1)
+        color_ramp.color_ramp.elements[1].color = (0.992, 0.906, 0.145, 1)
+        e1 = color_ramp.color_ramp.elements.new(0.25)
+        e1.color = (0.192, 0.408, 0.557, 1)
+        e2 = color_ramp.color_ramp.elements.new(0.5)
+        e2.color = (0.208, 0.718, 0.475, 1)
+        e3 = color_ramp.color_ramp.elements.new(0.75)
+        e3.color = (0.565, 0.843, 0.263, 1) 
+        
+
+
 
     emission = nodes.new('ShaderNodeEmission')
     output = nodes.new('ShaderNodeOutputMaterial')
@@ -459,6 +481,19 @@ class TREE_PT_seeds(bpy.types.Panel):
         layout.prop(props, "spot_width")
         layout.prop(props, "spot_strength")
 
+class TREE_PT_visualization(bpy.types.Panel):
+    bl_label = "Visualization"
+    bl_idname = "TREE_PT_visualization"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "TREE"
+    bl_parent_id = "TREE_PT_panel"
+
+    def draw(self, context):
+        props = context.scene.tree_props
+        layout = self.layout
+        layout.prop(props, "color_mode")
+
 
 def register():
     bpy.utils.register_class(ImportData)
@@ -468,10 +503,12 @@ def register():
     bpy.utils.register_class(VisualizeStreamlines)
     bpy.utils.register_class(TREE_PT_panel)
     bpy.utils.register_class(TREE_PT_seeds)
+    bpy.utils.register_class(TREE_PT_visualization)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
 
 def unregister():
-    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import) 
+    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
+    bpy.utils.unregister_class(TREE_PT_visualization)
     bpy.utils.unregister_class(TREE_PT_seeds)
     bpy.utils.unregister_class(TREE_PT_panel)
     bpy.utils.unregister_class(VisualizeStreamlines)
