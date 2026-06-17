@@ -7,7 +7,7 @@ from .parser.convert import convert
 from .parser.translate import translate
 from .mesh import build_mesh
 from bpy_extras.io_utils import ImportHelper
-from bpy.props import StringProperty, FloatProperty, IntProperty
+from bpy.props import StringProperty, FloatProperty, IntProperty, EnumProperty
 from bpy.types import Operator
 import bpy
 import colorsys
@@ -15,6 +15,7 @@ import math
 import random
 import time
 import numpy as np
+import itertools
 
 geometry = None
 read = None
@@ -67,10 +68,22 @@ class TREEProperties(bpy.types.PropertyGroup):
     anim_speed: FloatProperty(name="Anim Speed", default=0.01, min=0.001, max=1.0)
     spot_width: FloatProperty(name="Spot Width", default=0.1, min=0.01, max=1.0) 
     spot_strength: FloatProperty(name="Spot Strength", default=1.0)
+    seeding_mode: EnumProperty(
+            name="Seeding Mode",
+            items=[
+                ('FIBONACCI', "Fibonacci Sphere", ""),
+                ('STRATIFIED', "Stratified Random", ""),
+            ],
+            default='FIBONACCI'
+        )
     seeds_per_level: IntProperty(name="Seeds Per Level", default=50, min=1)
     alt_min: FloatProperty(name="Alt Min (km)", default=83.0)
     alt_max: FloatProperty(name="Alt Max (km)", default=90.0)
     alt_step: FloatProperty(name="Alt Step (km)", default=1.0, min=0.1)
+    lat_cell: FloatProperty(name="Lat Cell (deg)", default=1.0, min=0.1)
+    lon_cell: FloatProperty(name="Lon Cell (deg)", default=1.0, min=0.1)
+    alt_cell: FloatProperty(name="Alt Cell (km)", default=1.0, min=0.1)
+    
 
 def fibonacci_sphere(n):
     golden = (1 + math.sqrt(5)) / 2
@@ -83,6 +96,35 @@ def fibonacci_sphere(n):
         points.append((lat, lon))
     return points
 
+def stratified_random(lat_cell, lon_cell, alt_cell, lat_max, lat_min, lon_max, lon_min, alt_max, alt_min):
+    n_lat = math.ceil((lat_max - lat_min) / lat_cell)
+    n_lon = math.ceil((lon_max - lon_min) / lon_cell)
+    n_alt = math.ceil((alt_max - alt_min) / alt_cell)
+    
+    lat_idx_arr = np.arange(n_lat)
+    lon_idx_arr = np.arange(n_lon)
+    if n_alt == 0:
+        lat, lon = np.meshgrid(lat_idx_arr, lon_idx_arr, indexing='ij')
+        lat, lon = lat.ravel(), lon.ravel()
+        n = n_lat * n_lon 
+        lats = -90 + lat * lat_cell + np.random.uniform(0, lat_cell, n)
+        lons = -180 + lon * lon_cell + np.random.uniform(0, lon_cell, n)
+        alts = np.full(n, alt_min) 
+        seeds = np.stack([lats, lons, alts], axis=1)
+
+    else:
+        alt_idx_arr = np.arange(n_alt)
+        lat, lon, alt = np.meshgrid(lat_idx_arr, lon_idx_arr, alt_idx_arr, indexing='ij')
+        lat, lon, alt = lat.ravel(), lon.ravel(), alt.ravel()
+        n = n_lat * n_lon * n_alt 
+        lats = -90 + lat * lat_cell + np.random.uniform(0, lat_cell, n)
+        lons = -180 + lon * lon_cell + np.random.uniform(0, lon_cell, n)
+        alts = alt_min + alt * alt_cell + np.random.uniform(0, alt_cell, n)
+        seeds = np.stack([lats, lons, alts], axis=1)
+    seeds = seeds.tolist()
+    return seeds
+
+
 class ComputeStreamlines(Operator):
     """Get the path for the streamline"""
     bl_idname = "tree.compute_streamlines"
@@ -91,13 +133,19 @@ class ComputeStreamlines(Operator):
     def execute(self, context):
         global streamlines
         props = context.scene.tree_props
-        fib = fibonacci_sphere(props.seeds_per_level)
         alt = props.alt_min
         seeds = []
-        while alt <= props.alt_max + 1e-6:
-            for lat, lon in fib:
-                seeds.append([lat, lon, alt])
-            alt += props.alt_step 
+        if props.seeding_mode == 'FIBONACCI':
+            fib = fibonacci_sphere(props.seeds_per_level)  
+            while alt <= props.alt_max + 1e-6:
+                for lat, lon in fib:
+                    seeds.append([lat, lon, alt])
+                alt += props.alt_step
+        elif props.seeding_mode == 'STRATIFIED':
+            strat = stratified_random(props.lat_cell, props.lon_cell, props.alt_cell, 90, -90, 180, -180,
+                                      props.alt_max, props.alt_min)
+            seeds = strat
+
         #seeds = [[lat, lon, 86.0] for lat in range(0, 31, 6) for lon in range(0, 31, 6)]
         t0 = time.perf_counter()
         streamlines = tree_core.driveField(read, seeds, props.interval_start, props.interval_end, props.step_size)
@@ -386,7 +434,7 @@ class TREE_PT_panel(bpy.types.Panel):
         layout.operator(ComputeStreamlines.bl_idname)
         layout.operator(VisualizeStreamlines.bl_idname)
 
-class TREE_PT_seeds(bpy.types.Panel):
+class TREE_PT_seeds(bpy.types.Panel): 
     bl_label = "Seeds"
     bl_idname = "TREE_PT_seeds"
     bl_space_type = 'VIEW_3D'
@@ -397,10 +445,16 @@ class TREE_PT_seeds(bpy.types.Panel):
     def draw(self, context):
         props = context.scene.tree_props
         layout = self.layout
-        layout.prop(props, "seeds_per_level")
+        layout.prop(props, "seeding_mode")
+        if props.seeding_mode == 'FIBONACCI':
+            layout.prop(props, "seeds_per_level")
+            layout.prop(props, "alt_step")
+        elif props.seeding_mode == 'STRATIFIED':
+            layout.prop(props, "lat_cell")
+            layout.prop(props, "lon_cell")
+            layout.prop(props, "alt_cell")
         layout.prop(props, "alt_min")
         layout.prop(props, "alt_max") 
-        layout.prop(props, "alt_step")
         layout.prop(props, "anim_speed")
         layout.prop(props, "spot_width")
         layout.prop(props, "spot_strength")
