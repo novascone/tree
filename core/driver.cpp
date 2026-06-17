@@ -27,7 +27,7 @@ StreamlineSet driveField(Read& loaded_data, std::vector<std::vector<double>>& se
          Output out(0); 
          Integrator<AdaptiveRK5<Derivative>> integrator(seeds[i], interval_start, interval_end, default_absolute_error, default_relative_error, initial_step_size,
                                                         default_min_step_size, out, derivative);
-         integrator.integrate(bounds); 
+         integrator.integrate(bounds, true); 
          for (int j = 0; j < out.count; j++) {
             results[i].push_back({out.values_saved[j][0], out.values_saved[j][1], out.values_saved[j][2]});
          }

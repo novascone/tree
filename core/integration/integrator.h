@@ -37,7 +37,7 @@ struct Integrator {
               const double absolute_error, const double relative_error, const double step_p,
               const double min_step_p, Output& out_p, typename Stepper::Dtype& derivative_func_p);
 
-   void integrate(std::array<std::pair<double, double>, 3> bounds);
+   void integrate(std::array<std::pair<double, double>, 3> bounds, bool geographic);
 
 };
 
@@ -60,7 +60,7 @@ Integrator<Stepper>::Integrator(std::vector<double>& start_pos_p, const double i
 }
 
 template <class Stepper>
-void Integrator<Stepper>::integrate(std::array<std::pair<double, double>, 3> bounds) {
+void Integrator<Stepper>::integrate(std::array<std::pair<double, double>, 3> bounds, bool geographic) {
 
    derivative_func(interval_pos, pos, derivative);
 
@@ -78,7 +78,11 @@ void Integrator<Stepper>::integrate(std::array<std::pair<double, double>, 3> bou
       if (hermite_out) out.out(num_steps, interval_pos, pos, stepper, stepper.taken_step);
       else out.save(interval_pos, pos);
       if (pos[0] <= bounds[0].first || pos[0] >= bounds[0].second) return;
-      if (pos[1] <= bounds[1].first || pos[1] >= bounds[1].second) return;
+      if (geographic) {
+         if (pos[1] < bounds[1].first) pos[1] += 360.0;
+         else if (pos[1] > bounds[1].second) pos[1] -= 360.0;
+      }
+      else if (pos[1] <= bounds[1].first || pos[1] >= bounds[1].second) return;
       if (pos[2] <= bounds[2].first || pos[2] >= bounds[2].second) return;
       if ((interval_pos - interval_end) * (interval_end - interval_start) >= 0.0) { // done?
          for ( int i = 0; i < num_equations; i++) start_pos[i] = pos[i];
