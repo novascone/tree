@@ -6,6 +6,7 @@
 #include "mesh.h"
 #include "build_mesh.h"
 #include "driver.h"
+#include "interp.h"
 
 namespace py = pybind11;
 
@@ -15,7 +16,7 @@ PYBIND11_MAKE_OPAQUE(std::vector<std::string>);
 PYBIND11_MODULE(tree_core, m) {
    m.doc() = "TREE core module";
    m.def("build_mesh", &buildMesh); 
-   m.def("driveField", &driveField);
+   m.def("driveField", &driveField); 
  
    py::bind_vector<std::vector<FieldConfig>>(m, "FieldConfigList");
    py::bind_vector<std::vector<std::string>>(m, "StringVector"); 
@@ -89,7 +90,11 @@ PYBIND11_MODULE(tree_core, m) {
    py::class_<Read>(m, "Read")
       .def(py::init<FieldConfig>()) 
       .def_readonly("coords", &Read::coords)
-      .def_readonly("values", &Read::values);  
+      .def_readonly("values", &Read::values);
+
+   py::class_<TriInterp>(m, "TriInterp")
+      .def(py::init<Read&>())
+      .def("interp", &TriInterp::interp);
 }
    
 

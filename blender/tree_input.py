@@ -30,7 +30,7 @@ def read_data(input_file):
     validate(root)  
     config = convert(root) 
     tree_config = translate(config) 
-    geometry = tree_core.build_mesh(tree_config.geometry) 
+    geometry = tree_core.build_mesh(tree_config.geometry)
     read = tree_core.Read(tree_config.fields[0])
     
 
@@ -183,10 +183,19 @@ def mat_nodes(context, i):
     add.operation = 'ADD'
     add.inputs[1].default_value = 0.1
 
+    speed_attr = nodes.new('ShaderNodeAttribute')
+    speed_attr.attribute_name = 'speed'
+    speed_attr.attribute_type = 'GEOMETRY'
+
+    color_ramp = nodes.new('ShaderNodeValToRGB')
+    color_ramp.color_ramp.elements[0].position = 0.0
+    color_ramp.color_ramp.elements[0].color = (0, 0, 1, 1)
+    color_ramp.color_ramp.elements[1].position = 1.0
+    color_ramp.color_ramp.elements[1].color = (1, 0, 0, 1)
+
     emission = nodes.new('ShaderNodeEmission')
     output = nodes.new('ShaderNodeOutputMaterial')
     emission.inputs['Color'].default_value = (r, g, b, 0.1)
-
 
     anim_speed = props.anim_speed 
 
@@ -208,6 +217,8 @@ def mat_nodes(context, i):
     links.new(maximum.outputs['Value'], multiply.inputs[0])
     links.new(multiply.outputs['Value'], add.inputs[0])
     links.new(add.outputs['Value'], emission.inputs['Strength'])
+    links.new(speed_attr.outputs['Fac'], color_ramp.inputs['Fac'])
+    links.new(color_ramp.outputs['Color'], emission.inputs['Color'])
     links.new(emission.outputs['Emission'], output.inputs['Surface'])
 
     mat.diffuse_color = (r, g, b, 1.0)
@@ -218,6 +229,13 @@ def arc_length(points):
     norms = np.linalg.norm(diffs, axis=1)
     lengths= np.concatenate([[0.0], np.cumsum(norms)])
     return lengths
+
+def get_speeds(positions):
+    tri_interp = tree_core.TriInterp(read)
+    speeds = np.zeros(len(positions))
+    for i, pos in enumerate(positions):
+        speeds[i] = np.linalg.norm(tri_interp.interp(pos))
+    return speeds
 
 def gen_field_lines_viz(context):
     n = len([c for c in bpy.data.collections if c.name.startswith('run_')])
@@ -304,6 +322,12 @@ class VisualizeStreamlines(Operator):
             lons_np = np.array([p[1] for s in alt_streams for p in s])
             alts_np = np.array([p[2] for s in alt_streams for p in s])
 
+            positions = np.stack([lats_np, lons_np, alts_np], axis=1)
+            speeds = get_speeds(positions)
+            normalized_speeds = np.zeros(len(speeds))
+            if speeds.max() != 0:
+                normalized_speeds = speeds / speeds.max() 
+            
             x, y, z = convert_to_cart(lats_np, lons_np, alts_np)
             flat_x_y_z = np.stack([x, y, z], axis=1).flatten()
 
@@ -314,6 +338,7 @@ class VisualizeStreamlines(Operator):
             arc_attr = curve_data.attributes.new('arc_param', 'FLOAT', 'POINT')
             radius_attr = curve_data.attributes.new('radius', 'FLOAT', 'POINT')
             phase_attr = curve_data.attributes.new('phase', 'FLOAT', 'CURVE') 
+            speed_attr = curve_data.attributes.new('speed', 'FLOAT', 'POINT')
              
             flat_phase = np.array([random.random() for s in alt_streams])
             total_points = sum(len(s) for s in alt_streams)
@@ -321,6 +346,7 @@ class VisualizeStreamlines(Operator):
             curve_data.position_data.foreach_set('vector', flat_x_y_z)
             phase_attr.data.foreach_set('value', flat_phase)
             radius_attr.data.foreach_set('value', flat_radius)
+            speed_attr.data.foreach_set('value', normalized_speeds)
 
             arc_segments = []
             for s in alt_streams:
