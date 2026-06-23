@@ -7,12 +7,13 @@
 []
 
 [Fields]
-  [EM]
-     TYPE = VECTOR
+  [HWM]
+     type = vector 
      source = ~/HWM_Data/hwm_wind_field.nc
      grid_type = structured
      variables = u_mer u_zon 
-     coordinates = lat lon alt 
+     coordinates = lat lon alt
+     coordinate_system = geographic
      [render]
       line_type = straight
       colormap = some_colormap
@@ -24,6 +25,7 @@
    type = scalar
    source = some_data
    grid_type = structured
+   coordinate_system = cartesian
    [render]
     colormap = some_colormap
    []

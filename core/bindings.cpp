@@ -58,6 +58,7 @@ PYBIND11_MODULE(tree_core, m) {
       .def_readwrite("grid_type", &FieldConfig::grid_type)
       .def_readwrite("variables", &FieldConfig::variables)
       .def_readwrite("coordinates", &FieldConfig::coordinates)
+      .def_readwrite("coordinate_system", &FieldConfig::coordinate_system)
       .def_readwrite("vec_render", &FieldConfig::vec_render)
       .def_readwrite("scalar_render", &FieldConfig::scalar_render); 
 

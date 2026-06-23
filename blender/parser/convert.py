@@ -38,6 +38,7 @@ class FieldConfig:
     render: VecRenderConfig | ScalarRenderConfig
     variables:str | None
     coordinates:str | None 
+    coordinate_system:str | None
 
     def __init__(self):
         self.name = None
@@ -47,6 +48,7 @@ class FieldConfig:
         self.render = None 
         self.variables = None
         self.coordinates = None
+        self.coordinate_system = None
 
 class TREEConfig:
     geometry: GeometryConfig
@@ -106,6 +108,7 @@ def traverse(TREE_Config, valid_tree, parent = None) -> TREEConfig:
             field.type = cast(valid_tree.attributes["type"])
             field.grid_type = cast(valid_tree.attributes["grid_type"])
             field.source = cast(valid_tree.attributes["source"]) 
+            field.coordinate_system = cast(valid_tree.attributes["coordinate_system"])
             if valid_tree.attributes["type"] == "vector":
                 field.render = VecRenderConfig()
                 for child in valid_tree.children:
@@ -115,7 +118,7 @@ def traverse(TREE_Config, valid_tree, parent = None) -> TREEConfig:
                         field.render.seed_count = cast(child.attributes["seed_count"])
                         field.render.seed_distribution = cast(child.attributes["seed_distribution"])
                 field.variables = cast(valid_tree.attributes["variables"])
-                field.coordinates = cast(valid_tree.attributes["coordinates"])
+                field.coordinates = cast(valid_tree.attributes["coordinates"]) 
             if valid_tree.attributes["type"] == "scalar":
                 field.render = ScalarRenderConfig()
                 for child in valid_tree.children:
