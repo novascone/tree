@@ -20,10 +20,12 @@ import itertools
 
 geometry = None
 read = None
-streamlines = None
+streamlines = {} 
 tree_config = None
 field_names = []
-_field_classes = [] 
+_field_classes = []
+_field_operators = []
+
 
 def read_data(input_file):
 
@@ -57,6 +59,7 @@ class ImportData(Operator, ImportHelper):
             obj = bpy.data.objects.new(geometry.name, mesh)
             bpy.context.collection.objects.link(obj)
             register_field_classes()
+            register_field_operators()
             scene = context.scene
             scene.tree_field_props.clear()
             for field in tree_config.fields:
@@ -98,8 +101,8 @@ def draw_factory(idx):
                 box1.prop(props, "interval_start")
                 box1.prop(props, "interval_end")
                 box1.prop(props, "step_size")
-                box1.operator(ComputeStreamlines.bl_idname)
-                box1.operator(VisualizeStreamlines.bl_idname)
+                box1.operator(f'tree.compute_{idx}')
+                box1.operator(f'tree.visualize_{idx}')
                 box1.prop(props, "color_mode")
                 box1.prop(props, "anim_speed")
                 box1.prop(props, "spot_width")
@@ -163,8 +166,7 @@ class FieldProperties(bpy.types.PropertyGroup):
     alt_step: FloatProperty(name="Alt Step (km)", default=1.0, min=0.1)
     lat_cell: FloatProperty(name="Lat Cell (deg)", default=1.0, min=0.1)
     lon_cell: FloatProperty(name="Lon Cell (deg)", default=1.0, min=0.1)
-    alt_cell: FloatProperty(name="Alt Cell (km)", default=1.0, min=0.1) 
-    coordinate_system: StringProperty(name="Coordinate System")
+    alt_cell: FloatProperty(name="Alt Cell (km)", default=1.0, min=0.1)  
     show_seeds: BoolProperty(name="Seeds", default=False)
     show_viz: BoolProperty(name="Visualization", default=False)
     
@@ -209,34 +211,6 @@ def stratified_random(lat_cell, lon_cell, alt_cell, lat_max, lat_min, lon_max, l
     return seeds
 
 
-class ComputeStreamlines(Operator):
-    """Get the path for the streamline"""
-    bl_idname = "tree.compute_streamlines"
-    bl_label = "Compute Streamlines" 
-
-    def execute(self, context):
-        global streamlines
-        props = context.scene.tree_props
-        alt = props.alt_min
-        seeds = []
-        if props.seeding_mode == 'FIBONACCI':
-            fib = fibonacci_sphere(props.seeds_per_level)  
-            while alt <= props.alt_max + 1e-6:
-                for lat, lon in fib:
-                    seeds.append([lat, lon, alt])
-                alt += props.alt_step
-        elif props.seeding_mode == 'STRATIFIED':
-            strat = stratified_random(props.lat_cell, props.lon_cell, props.alt_cell, 90, -90, 180, -180,
-                                      props.alt_max, props.alt_min)
-            seeds = strat
-
-        #seeds = [[lat, lon, 86.0] for lat in range(0, 31, 6) for lon in range(0, 31, 6)]
-        t0 = time.perf_counter()
-        streamlines = tree_core.driveField(read, seeds, props.interval_start, props.interval_end, props.step_size)
-        t1 = time.perf_counter()
-        print(f"Integration: {t1 - t0:.3f}s")
-        return {'FINISHED'}
-
 def convert_to_cart(lats, lons, alts):
     lat_r = np.radians(lats)
     lon_r = np.radians(lons)
@@ -249,9 +223,9 @@ def convert_to_cart(lats, lons, alts):
     return x, y, z
 
 
-def mat_nodes(context, i):
+def mat_nodes(context, i, idx):
  
-    props = context.scene.tree_props
+    props = context.scene.tree_field_props[idx]
     #streamline_collection['interval_start'] = props.interval_start
     #streamline_collection['interval_end'] = props.interval_end
     #streamline_collection['step_size'] = props.step_size
@@ -376,48 +350,48 @@ def arc_length(points):
     lengths= np.concatenate([[0.0], np.cumsum(norms)])
     return lengths
 
-def get_speeds(positions):
-    tri_interp = tree_core.TriInterp(read)
+def get_speeds(positions, idx):
+    tri_interp = tree_core.TriInterp(read[idx])
     speeds = np.zeros(len(positions))
     for i, pos in enumerate(positions):
         speeds[i] = np.linalg.norm(tri_interp.interp(pos))
     return speeds
 
-def gen_field_lines_viz(context):
+def gen_field_lines_viz(context, idx):
     n = len([c for c in bpy.data.collections if c.name.startswith('run_')])
     streamline_collection = bpy.data.collections.new(f'run_{n}')
     bpy.context.scene.collection.children.link(streamline_collection)
     t_mat = 0.0
     t_points = 0.0 
     t0 = time.perf_counter()
-    mat = mat_nodes(context, n)
+    mat = mat_nodes(context, n, idx)
     t_mat += time.perf_counter() - t0
              
     
 
-    x = np.array([p[0] for s in streamlines for p in s])
-    y = np.array([p[1] for s in streamlines for p in s])
-    z = np.array([p[2] for s in streamlines for p in s])
+    x = np.array([p[0] for s in streamlines[idx] for p in s])
+    y = np.array([p[1] for s in streamlines[idx] for p in s])
+    z = np.array([p[2] for s in streamlines[idx] for p in s])
  
     flat_x_y_z = np.stack([x, y, z], axis=1).flatten()
 
     t0 = time.perf_counter()
 
     curve_data = bpy.data.hair_curves.new(f'curves')
-    curve_data.add_curves([len(s) for s in streamlines]) 
+    curve_data.add_curves([len(s) for s in streamlines[idx]]) 
     arc_attr = curve_data.attributes.new('arc_param', 'FLOAT', 'POINT')
     radius_attr = curve_data.attributes.new('radius', 'FLOAT', 'POINT')
     phase_attr = curve_data.attributes.new('phase', 'FLOAT', 'CURVE') 
              
-    flat_phase = np.array([random.random() for s in streamlines])
-    total_points = sum(len(s) for s in streamlines)
+    flat_phase = np.array([random.random() for s in streamlines[idx]])
+    total_points = sum(len(s) for s in streamlines[idx])
     flat_radius = np.full(total_points, 0.1)
     curve_data.position_data.foreach_set('vector', flat_x_y_z)
     phase_attr.data.foreach_set('value', flat_phase)
     radius_attr.data.foreach_set('value', flat_radius)
     
     arc_segments = []
-    for s in streamlines:
+    for s in streamlines[idx]:
         pts = np.stack([
                         np.array([p[0] for p in s]),
                         np.array([p[1] for p in s]),
@@ -437,19 +411,45 @@ def gen_field_lines_viz(context):
     print(f"mat: {t_mat:.3f}s points: {t_points:.3f}s")
     return {'FINISHED'}
 
-    
-class VisualizeStreamlines(Operator):
-    """Create the curve objects"""
-    bl_idname = "tree.visualize_streamlines"
-    bl_label = "Visualize Streamlines"
 
+def register_field_operators():
+    global _field_operators, field_names
+    unregister_field_operators()
+
+    for i, field in enumerate(field_names):
+        vis_cls = type(f'TREE_OT_visualization_operator_{i}', (bpy.types.Operator,), {
+            'bl_label': f'Visualize Streamlines',
+            'bl_idname': f'tree.visualize_{i}',
+            'execute': viz_execute_factory(i),
+        })
+
+        op_cls = type(f'TREE_OT_computation_operator_{i}', (bpy.types.Operator,), {
+            'bl_label': f'Compute Streamlines',
+            'bl_idname': f'tree.compute_{i}',
+            'execute': comp_execute_factory(i),
+        })
+        bpy.utils.register_class(vis_cls)
+        bpy.utils.register_class(op_cls)
+        _field_operators.append(vis_cls)
+        _field_operators.append(op_cls)
+        
+
+def unregister_field_operators():
+    global _field_operators
+
+    for operator in _field_operators:
+        bpy.utils.unregister_class(operator)
+    _field_operators.clear()
+
+
+def viz_execute_factory(idx):
     def execute(self, context):
         n = len([c for c in bpy.data.collections if c.name.startswith('run_')])
         streamline_collection = bpy.data.collections.new(f'run_{n}')
         bpy.context.scene.collection.children.link(streamline_collection)
-        alt_min = context.scene.tree_props.alt_min
-        alt_step = context.scene.tree_props.alt_step
-        alt_max = context.scene.tree_props.alt_max 
+        alt_min = context.scene.tree_field_props[idx].alt_min
+        alt_step = context.scene.tree_field_props[idx].alt_step
+        alt_max = context.scene.tree_field_props[idx].alt_max 
         alts = [alt_min] 
         while alts[-1] + alt_step <= alt_max + 1e-6:
             alts.append(alts[-1] + alt_step)
@@ -457,19 +457,19 @@ class VisualizeStreamlines(Operator):
         t_points = 0.0
         for i, alt in enumerate(alts):
             t0 = time.perf_counter()
-            mat = mat_nodes(context, i)
+            mat = mat_nodes(context, i, idx)
             t_mat += time.perf_counter() - t0
             alt_collection = bpy.data.collections.new(f'{alts[i]}_km')
             streamline_collection.children.link(alt_collection) 
             
-            alt_streams = [s for s in streamlines if len(s) > 0.0 and abs(s[0][2] - alt) < 0.01]
+            alt_streams = [s for s in streamlines[idx] if len(s) > 0.0 and abs(s[0][2] - alt) < 0.01]
 
             lats_np = np.array([p[0] for s in alt_streams for p in s])
             lons_np = np.array([p[1] for s in alt_streams for p in s])
             alts_np = np.array([p[2] for s in alt_streams for p in s])
 
             positions = np.stack([lats_np, lons_np, alts_np], axis=1)
-            speeds = get_speeds(positions)
+            speeds = get_speeds(positions, idx)
             normalized_speeds = np.zeros(len(speeds))
             if speeds.max() != 0:
                 normalized_speeds = speeds / speeds.max() 
@@ -515,6 +515,34 @@ class VisualizeStreamlines(Operator):
             
         print(f"mat: {t_mat:.3f}s points: {t_points:.3f}s")
         return {'FINISHED'}
+    return execute
+
+def comp_execute_factory(idx): 
+    def execute(self, context):
+        global streamlines
+        props = context.scene.tree_field_props[idx]
+        alt = props.alt_min
+        seeds = []
+        if props.seeding_mode == 'FIBONACCI':
+            fib = fibonacci_sphere(props.seeds_per_level)  
+            while alt <= props.alt_max + 1e-6:
+                for lat, lon in fib:
+                    seeds.append([lat, lon, alt])
+                alt += props.alt_step
+        elif props.seeding_mode == 'STRATIFIED':
+            strat = stratified_random(props.lat_cell, props.lon_cell, props.alt_cell, 90, -90, 180, -180,
+                                      props.alt_max, props.alt_min)
+            seeds = strat
+        
+            #seeds = [[lat, lon, 86.0] for lat in range(0, 31, 6) for lon in range(0, 31, 6)]
+        t0 = time.perf_counter()
+        streamlines[idx] = tree_core.driveField(read[idx], seeds, props.interval_start, props.interval_end, props.step_size)
+        t1 = time.perf_counter()
+        print(f"Integration: {t1 - t0:.3f}s")
+        return {'FINISHED'}
+    return execute
+
+
 
 class TREE_PT_panel(bpy.types.Panel):
     bl_label = "TREE"
@@ -523,73 +551,20 @@ class TREE_PT_panel(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "TREE"
 
-    def draw(self, context):
-        props = context.scene.tree_props 
-        layout = self.layout
-        layout.prop(props, "interval_start")
-        layout.prop(props, "interval_end")
-        layout.prop(props, "step_size")
-        layout.operator(ComputeStreamlines.bl_idname)
-        layout.operator(VisualizeStreamlines.bl_idname)
-
-class TREE_PT_seeds(bpy.types.Panel): 
-    bl_label = "Seeds"
-    bl_idname = "TREE_PT_seeds"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = "TREE"
-    bl_parent_id = "TREE_PT_panel"
-        
-    def draw(self, context):
-        props = context.scene.tree_props
-        layout = self.layout
-        layout.prop(props, "seeding_mode")
-        if props.seeding_mode == 'FIBONACCI':
-            layout.prop(props, "seeds_per_level")
-            layout.prop(props, "alt_step")
-        elif props.seeding_mode == 'STRATIFIED':
-            layout.prop(props, "lat_cell")
-            layout.prop(props, "lon_cell")
-            layout.prop(props, "alt_cell")
-        layout.prop(props, "alt_min")
-        layout.prop(props, "alt_max") 
-        layout.prop(props, "anim_speed")
-        layout.prop(props, "spot_width")
-        layout.prop(props, "spot_strength")
-
-class TREE_PT_visualization(bpy.types.Panel):
-    bl_label = "Visualization"
-    bl_idname = "TREE_PT_visualization"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = "TREE"
-    bl_parent_id = "TREE_PT_panel"
-
-    def draw(self, context):
-        props = context.scene.tree_props
-        layout = self.layout
-        layout.prop(props, "color_mode")
-
+    def draw(self, context): pass
 
 def register():
     bpy.utils.register_class(ImportData)
     bpy.utils.register_class(FieldProperties)
     bpy.types.Scene.tree_field_props = bpy.props.CollectionProperty(type=FieldProperties)
-    bpy.utils.register_class(ComputeStreamlines)
-    bpy.utils.register_class(VisualizeStreamlines)
-    bpy.utils.register_class(TREE_PT_panel)
-    bpy.utils.register_class(TREE_PT_seeds)
-    bpy.utils.register_class(TREE_PT_visualization)
+    bpy.utils.register_class(TREE_PT_panel) 
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
 
 def unregister():
-    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
-    bpy.utils.unregister_class(TREE_PT_visualization)
-    bpy.utils.unregister_class(TREE_PT_seeds)
+    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import) 
     unregister_field_classes()
     bpy.utils.unregister_class(TREE_PT_panel)
-    bpy.utils.unregister_class(VisualizeStreamlines)
-    bpy.utils.unregister_class(ComputeStreamlines)  
+    unregister_field_operators() 
     del bpy.types.Scene.tree_field_props
     bpy.utils.unregister_class(FieldProperties)
     bpy.utils.unregister_class(ImportData)
