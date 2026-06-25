@@ -27,26 +27,7 @@ struct FieldConfig {
    std::string coordinate_system;
    std::optional<std::vector<std::string>> variables;
    std::optional<std::vector<std::string>> coordinates;
-   
-   struct VecRenderConfig {
-
-      std::string colormap;
-      std::string line_type;
-      int seed_count;
-      std::string seed_distribution;
- 
-   };
-
-   struct ScalarRenderConfig {
-      
-      std::string colormap;
-
-   };
-
-   std::optional<VecRenderConfig> vec_render;
-   std::optional<ScalarRenderConfig> scalar_render;
-
-
+   std::optional<double> altitude;
 };
 
 struct TREEConfig {

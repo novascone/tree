@@ -13,21 +13,15 @@
      grid_type = structured
      variables = u_mer u_zon 
      coordinates = lat lon alt
-     coordinate_system = geographic
-     [render]
-      line_type = straight
-      colormap = some_colormap
-      seed_count = 100 
-      seed_distribution = uniform
-     []
+     coordinate_system = geographic 
   []
-  [Temperature]
+  [AWE]
    type = scalar
-   source = some_data
-   grid_type = structured
-   coordinate_system = cartesian
-   [render]
-    colormap = some_colormap
-   []
+   source = ~/awe-data/awe_l3c_q20_2024146T2343_02882_v01.nc
+   grid_type = unstructured
+   variables = Radiance
+   coordinates = Latitude Longitude 
+   coordinate_system = geographic
+   altitude = 85
   [] 
 []

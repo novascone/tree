@@ -75,34 +75,35 @@ def draw_factory(idx):
     def draw(self, context): 
         props = context.scene.tree_field_props[idx]
         layout = self.layout
-        box = layout.box()
-        row = box.row()
-        row.prop(props, "show_seeds", icon='TRIA_DOWN' if props.show_seeds else 'TRIA_RIGHT', emboss=False)
-        if props.show_seeds:
-           box.prop(props, "seeding_mode")
-           box.prop(props, "alt_min")
-           box.prop(props, "alt_max") 
-           if props.seeding_mode == 'FIBONACCI':
-                box.prop(props, "seeds_per_level")
-                box.prop(props, "alt_step")
-           elif props.seeding_mode == 'STRATIFIED':
-                box.prop(props, "lat_cell")
-                box.prop(props, "lon_cell")
-                box.prop(props, "alt_cell")
+        if tree_config.fields[idx].grid_type == "structured" or tree_config.fields[idx].type == "vector":
+            seed_box = layout.box()
+            seed_row = seed_box.row()
+            seed_row.prop(props, "show_seeds", icon='TRIA_DOWN' if props.show_seeds else 'TRIA_RIGHT', emboss=False)
+            if props.show_seeds:
+               seed_box.prop(props, "seeding_mode")
+               seed_box.prop(props, "alt_min")
+               seed_box.prop(props, "alt_max") 
+               if props.seeding_mode == 'FIBONACCI':
+                    seed_box.prop(props, "seeds_per_level")
+                    seed_box.prop(props, "alt_step")
+               elif props.seeding_mode == 'STRATIFIED':
+                    seed_box.prop(props, "lat_cell")
+                    seed_box.prop(props, "lon_cell")
+                    seed_box.prop(props, "alt_cell")
         if tree_config.fields[idx].type == "vector":
-            box1 = layout.box()
-            row1 = box1.row()
-            row1.prop(props, "show_viz", icon='TRIA_DOWN' if props.show_viz else 'TRIA_RIGHT', emboss=False)
+            stream_box = layout.box()
+            stream_row = stream_box.row()
+            stream_row.prop(props, "show_viz", icon='TRIA_DOWN' if props.show_viz else 'TRIA_RIGHT', emboss=False)
             if props.show_viz:
-                box1.prop(props, "interval_start")
-                box1.prop(props, "interval_end")
-                box1.prop(props, "step_size")
-                box1.operator(f'tree.compute_{idx}')
-                box1.operator(f'tree.visualize_{idx}')
-                box1.prop(props, "color_mode")
-                box1.prop(props, "anim_speed")
-                box1.prop(props, "spot_width")
-                box1.prop(props, "spot_strength")
+                stream_box.prop(props, "interval_start")
+                stream_box.prop(props, "interval_end")
+                stream_box.prop(props, "step_size")
+                stream_box.operator(f'tree.compute_{idx}')
+                stream_box.operator(f'tree.visualize_{idx}')
+                stream_box.prop(props, "color_mode")
+                stream_box.prop(props, "anim_speed")
+                stream_box.prop(props, "spot_width")
+                stream_box.prop(props, "spot_strength")
     return draw
 
 def register_field_classes():
@@ -162,7 +163,12 @@ class FieldProperties(bpy.types.PropertyGroup):
     alt_step: FloatProperty(name="Alt Step (km)", default=1.0, min=0.1)
     lat_cell: FloatProperty(name="Lat Cell (deg)", default=1.0, min=0.1)
     lon_cell: FloatProperty(name="Lon Cell (deg)", default=1.0, min=0.1)
-    alt_cell: FloatProperty(name="Alt Cell (km)", default=1.0, min=0.1)  
+    alt_cell: FloatProperty(name="Alt Cell (km)", default=1.0, min=0.1)
+    point_radius: FloatProperty(name="Point Radius (m)", default=0.1)
+    scalar_min: FloatProperty(name="Scalar Min", default=-1000.0)
+    scalar_max: FloatProperty(name="Scalar Max", default=1000.0)
+    displacement: BoolProperty(name="Displacement", default=False)
+    displacement_scale: FloatProperty(name="Displacement Scale (m)", default=500.0)
     show_seeds: BoolProperty(name="Seeds", default=False)
     show_viz: BoolProperty(name="Visualization", default=False)
 

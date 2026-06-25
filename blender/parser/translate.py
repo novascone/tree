@@ -16,24 +16,20 @@ def translate(TREE_input) -> tree_core.TREEConfig:
         fieldBind.type = field.type
         fieldBind.source = os.path.expanduser(field.source)
         fieldBind.grid_type = field.grid_type
-        fieldBind.coordinate_system = field.coordinate_system
-        if field.type == "vector": 
-            fieldBind.variables = tree_core.StringVector()
+        fieldBind.coordinate_system = field.coordinate_system  
+        fieldBind.variables = tree_core.StringVector()
+        if field.variables:
             variables = field.variables.split(" ")
             for var in variables:
-                fieldBind.variables.append(var) 
-            fieldBind.coordinates = tree_core.StringVector()
+                fieldBind.variables.append(var)
+        fieldBind.coordinates = tree_core.StringVector()
+        if field.coordinates: 
             coordinates = field.coordinates.split(" ")
             for coord in coordinates:
-                fieldBind.coordinates.append(coord)
-            fieldBind.vec_render = tree_core.VecRenderConfig()
-            fieldBind.vec_render.colormap = field.render.colormap
-            fieldBind.vec_render.line_type = field.render.line_type
-            fieldBind.vec_render.seed_count = field.render.seed_count
-            fieldBind.vec_render.seed_distribution = field.render.seed_distribution
-        elif field.type == "scalar":
-            fieldBind.scalar_render = tree_core.ScalarRenderConfig()
-            fieldBind.scalar_render.colormap = field.render.colormap
+                fieldBind.coordinates.append(coord) 
+        if field.type == "scalar": 
+            if field.altitude is not None:
+                fieldBind.altitude = field.altitude
         TREEBinds.fields.append(fieldBind)
 
     return TREEBinds

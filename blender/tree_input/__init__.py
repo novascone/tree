@@ -12,6 +12,10 @@ def register():
     bpy.types.TOPBAR_MT_file_import.append(interaction.menu_func_import)
 
 def unregister():
+    interaction.read = None
+    interaction.streamlines = {}
+    interaction.tree_config = None
+    interaction.geometry = None
     bpy.types.TOPBAR_MT_file_import.remove(interaction.menu_func_import) 
     interaction.unregister_field_classes()
     bpy.utils.unregister_class(interaction.TREE_PT_panel)

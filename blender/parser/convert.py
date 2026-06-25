@@ -10,45 +10,26 @@ class GeometryConfig:
         self.source = None
         self.type = None
         self.parameters = None
-
-class VecRenderConfig:
-    colormap:str
-    line_type:str
-    seed_count:int
-    seed_distribution:str
-
-    def __init__(self):
-        self.colormap = None
-        self.line_type = None
-        self.seed_count = None
-        self.seed_distribution = None
-
-class ScalarRenderConfig:
-    colormap:str
-
-    def __init__(self):
-        self.colormap = None
-
         
 class FieldConfig:
     name:str
     type:str
     source:str
-    grid_type:str
-    render: VecRenderConfig | ScalarRenderConfig
+    grid_type:str 
     variables:str | None
     coordinates:str | None 
     coordinate_system:str | None
+    altitude:float | None
 
     def __init__(self):
         self.name = None
         self.type = None
         self.source = None
-        self.grid_type = None
-        self.render = None 
+        self.grid_type = None 
         self.variables = None
         self.coordinates = None
         self.coordinate_system = None
+        self.altitude = None
 
 class TREEConfig:
     geometry: GeometryConfig
@@ -108,22 +89,12 @@ def traverse(TREE_Config, valid_tree, parent = None) -> TREEConfig:
             field.type = cast(valid_tree.attributes["type"])
             field.grid_type = cast(valid_tree.attributes["grid_type"])
             field.source = cast(valid_tree.attributes["source"]) 
-            field.coordinate_system = cast(valid_tree.attributes["coordinate_system"])
-            if valid_tree.attributes["type"] == "vector":
-                field.render = VecRenderConfig()
-                for child in valid_tree.children:
-                    if child.name == "render":
-                        field.render.line_type = cast(child.attributes["line_type"])
-                        field.render.colormap = cast(child.attributes["colormap"])
-                        field.render.seed_count = cast(child.attributes["seed_count"])
-                        field.render.seed_distribution = cast(child.attributes["seed_distribution"])
-                field.variables = cast(valid_tree.attributes["variables"])
-                field.coordinates = cast(valid_tree.attributes["coordinates"]) 
+            field.coordinate_system = cast(valid_tree.attributes["coordinate_system"]) 
+            field.variables = cast(valid_tree.attributes["variables"])
+            field.coordinates = cast(valid_tree.attributes["coordinates"]) 
             if valid_tree.attributes["type"] == "scalar":
-                field.render = ScalarRenderConfig()
-                for child in valid_tree.children:
-                    if child.name == "render":
-                        field.render.colormap = cast(child.attributes["colormap"])  
+                if "altitude" in valid_tree.attributes:
+                    field.altitude = cast(valid_tree.attributes["altitude"])
             TREE_Config.fields.append(field) 
    
     return TREE_Config

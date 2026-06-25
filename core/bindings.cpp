@@ -59,20 +59,8 @@ PYBIND11_MODULE(tree_core, m) {
       .def_readwrite("variables", &FieldConfig::variables)
       .def_readwrite("coordinates", &FieldConfig::coordinates)
       .def_readwrite("coordinate_system", &FieldConfig::coordinate_system)
-      .def_readwrite("vec_render", &FieldConfig::vec_render)
-      .def_readwrite("scalar_render", &FieldConfig::scalar_render); 
-
-   py::class_<FieldConfig::VecRenderConfig>(m, "VecRenderConfig")
-      .def(py::init<>())
-      .def_readwrite("colormap", &FieldConfig::VecRenderConfig::colormap)
-      .def_readwrite("line_type", &FieldConfig::VecRenderConfig::line_type)
-      .def_readwrite("seed_count", &FieldConfig::VecRenderConfig::seed_count)
-      .def_readwrite("seed_distribution", &FieldConfig::VecRenderConfig::seed_distribution);
-
-   py::class_<FieldConfig::ScalarRenderConfig>(m, "ScalarRenderConfig")
-      .def(py::init<>())
-      .def_readwrite("colormap", &FieldConfig::ScalarRenderConfig::colormap);
-
+      .def_readwrite("altitude", &FieldConfig::altitude);
+    
    py::class_<TREEConfig>(m, "TREEConfig")
       .def(py::init<>())
       .def_readwrite("geometry", &TREEConfig::geometry)

@@ -16,13 +16,13 @@ def register_field_operators():
         vis_cls = type(f'TREE_OT_visualization_operator_{i}', (bpy.types.Operator,), {
             'bl_label': f'Visualize Streamlines',
             'bl_idname': f'tree.visualize_{i}',
-            'execute': viz_execute_factory(i),
+            'execute': vec_viz_execute_factory(i),
         })
 
         op_cls = type(f'TREE_OT_computation_operator_{i}', (bpy.types.Operator,), {
             'bl_label': f'Compute Streamlines',
             'bl_idname': f'tree.compute_{i}',
-            'execute': comp_execute_factory(i),
+            'execute': vec_comp_execute_factory(i),
         })
         bpy.utils.register_class(vis_cls)
         bpy.utils.register_class(op_cls)
@@ -35,8 +35,32 @@ def unregister_field_operators():
         bpy.utils.unregister_class(operator)
     interaction._field_operators.clear()
 
+def vec_comp_execute_factory(idx): 
+    def execute(self, context): 
+        props = context.scene.tree_field_props[idx]
+        alt = props.alt_min
+        seeds = []
+        if props.seeding_mode == 'FIBONACCI':
+            fib = fibonacci_sphere(props.seeds_per_level)  
+            while alt <= props.alt_max + 1e-6:
+                for lat, lon in fib:
+                    seeds.append([lat, lon, alt])
+                alt += props.alt_step
+        elif props.seeding_mode == 'STRATIFIED':
+            strat = stratified_random(props.lat_cell, props.lon_cell, props.alt_cell, 90, -90, 180, -180,
+                                      props.alt_max, props.alt_min)
+            seeds = strat
+        
+            #seeds = [[lat, lon, 86.0] for lat in range(0, 31, 6) for lon in range(0, 31, 6)]
+        t0 = time.perf_counter()
+        interaction.streamlines[idx] = tree_core.driveField(interaction.read[idx], seeds, props.interval_start, props.interval_end, props.step_size)
+        t1 = time.perf_counter()
+        print(f"Integration: {t1 - t0:.3f}s")
+        return {'FINISHED'}
+    return execute
 
-def viz_execute_factory(idx):
+
+def vec_viz_execute_factory(idx):
     def execute(self, context):
         n = len([c for c in bpy.data.collections if c.name.startswith('run_')])
         streamline_collection = bpy.data.collections.new(f'run_{n}')
@@ -111,29 +135,22 @@ def viz_execute_factory(idx):
         return {'FINISHED'}
     return execute
 
-def comp_execute_factory(idx): 
+def sca_comp_execute_factory(idx):
     def execute(self, context): 
         props = context.scene.tree_field_props[idx]
-        alt = props.alt_min
-        seeds = []
-        if props.seeding_mode == 'FIBONACCI':
-            fib = fibonacci_sphere(props.seeds_per_level)  
-            while alt <= props.alt_max + 1e-6:
-                for lat, lon in fib:
-                    seeds.append([lat, lon, alt])
-                alt += props.alt_step
-        elif props.seeding_mode == 'STRATIFIED':
-            strat = stratified_random(props.lat_cell, props.lon_cell, props.alt_cell, 90, -90, 180, -180,
-                                      props.alt_max, props.alt_min)
-            seeds = strat
-        
-            #seeds = [[lat, lon, 86.0] for lat in range(0, 31, 6) for lon in range(0, 31, 6)]
-        t0 = time.perf_counter()
-        interaction.streamlines[idx] = tree_core.driveField(interaction.read[idx], seeds, props.interval_start, props.interval_end, props.step_size)
-        t1 = time.perf_counter()
-        print(f"Integration: {t1 - t0:.3f}s")
-        return {'FINISHED'}
+        point_radius = context.scene.tree_field_props[idx].point_radius
+        displacement = context.scene.tree_field_props[idx].displacement
+        if displacement:
+            displacement_scale = context.scene.tree_field_props[idx].displacement_scale
+
+
     return execute
+        
+
+def sca_viz_execute_factory(idx):
+    def execute(self, context): pass
+    return execute
+
 
 def gen_field_lines_viz(context, idx):
     n = len([c for c in bpy.data.collections if c.name.startswith('run_')])
