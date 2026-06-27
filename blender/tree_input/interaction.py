@@ -98,12 +98,22 @@ def draw_factory(idx):
                 stream_box.prop(props, "interval_start")
                 stream_box.prop(props, "interval_end")
                 stream_box.prop(props, "step_size")
-                stream_box.operator(f'tree.compute_{idx}')
-                stream_box.operator(f'tree.visualize_{idx}')
                 stream_box.prop(props, "color_mode")
                 stream_box.prop(props, "anim_speed")
                 stream_box.prop(props, "spot_width")
                 stream_box.prop(props, "spot_strength")
+                stream_box.operator(f'tree.compute_{idx}')
+                stream_box.operator(f'tree.visualize_vector_{idx}')
+        elif tree_config.fields[idx].type == "scalar":
+            scalar_box = layout.box()
+            scalar_box.prop(props, "opacity")
+            scalar_box.prop(props, "strength")
+            scalar_box.prop(props, "point_radius")
+            scalar_box.prop(props, "displacement")
+            if props.displacement:
+                scalar_box.prop(props, "displacement_scale")
+            scalar_box.operator(f'tree.visualize_scalar_{idx}')
+
     return draw
 
 def register_field_classes():
@@ -164,11 +174,13 @@ class FieldProperties(bpy.types.PropertyGroup):
     lat_cell: FloatProperty(name="Lat Cell (deg)", default=1.0, min=0.1)
     lon_cell: FloatProperty(name="Lon Cell (deg)", default=1.0, min=0.1)
     alt_cell: FloatProperty(name="Alt Cell (km)", default=1.0, min=0.1)
-    point_radius: FloatProperty(name="Point Radius (m)", default=0.1)
+    opacity: FloatProperty(name="Opacity", default=0.05)
+    strength: FloatProperty(name="Strength", default=0.3)
+    point_radius: FloatProperty(name="Point Radius (m)", default=0.001)
     scalar_min: FloatProperty(name="Scalar Min", default=-1000.0)
     scalar_max: FloatProperty(name="Scalar Max", default=1000.0)
     displacement: BoolProperty(name="Displacement", default=False)
-    displacement_scale: FloatProperty(name="Displacement Scale (m)", default=500.0)
+    displacement_scale: FloatProperty(name="Displacement Scale (m)", default=0.005)
     show_seeds: BoolProperty(name="Seeds", default=False)
     show_viz: BoolProperty(name="Visualization", default=False)
 

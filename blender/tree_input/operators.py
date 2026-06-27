@@ -6,28 +6,39 @@ import random
 import time
 import numpy as np
 from . import interaction
-from .materials import mat_nodes
+from .materials import mat_nodes, sca_mat_nodes
 from .utils import convert_to_cart, arc_length, get_speeds, fibonacci_sphere, stratified_random
 
 def register_field_operators(): 
     unregister_field_operators()
 
     for i, field in enumerate(interaction.field_names):
-        vis_cls = type(f'TREE_OT_visualization_operator_{i}', (bpy.types.Operator,), {
-            'bl_label': f'Visualize Streamlines',
-            'bl_idname': f'tree.visualize_{i}',
-            'execute': vec_viz_execute_factory(i),
-        })
+        field_type = interaction.tree_config.fields[i].type
+        if field_type == "vector":
+            vis_cls = type(f'TREE_OT_visualization_operator_{i}', (bpy.types.Operator,), {
+                'bl_label': f'Visualize Streamlines',
+                'bl_idname': f'tree.visualize_vector_{i}',
+                'execute': vec_viz_execute_factory(i),
+            })
 
-        op_cls = type(f'TREE_OT_computation_operator_{i}', (bpy.types.Operator,), {
-            'bl_label': f'Compute Streamlines',
-            'bl_idname': f'tree.compute_{i}',
-            'execute': vec_comp_execute_factory(i),
-        })
-        bpy.utils.register_class(vis_cls)
-        bpy.utils.register_class(op_cls)
-        interaction._field_operators.append(vis_cls)
-        interaction._field_operators.append(op_cls)
+            op_cls = type(f'TREE_OT_computation_operator_{i}', (bpy.types.Operator,), {
+                'bl_label': f'Compute Streamlines',
+                'bl_idname': f'tree.compute_{i}',
+                'execute': vec_comp_execute_factory(i),
+            })
+            bpy.utils.register_class(vis_cls)
+            bpy.utils.register_class(op_cls)
+            interaction._field_operators.append(vis_cls)
+            interaction._field_operators.append(op_cls)
+        elif field_type == "scalar":
+            vis_cls = type(f'TREE_OT_visualization_operator_{i}', (bpy.types.Operator,), {
+                'bl_label': f'Visualize Scalar',
+                'bl_idname': f'tree.visualize_scalar_{i}',
+                'execute': sca_viz_execute_factory(i),
+            })
+            bpy.utils.register_class(vis_cls)
+            interaction._field_operators.append(vis_cls) 
+
         
 
 def unregister_field_operators():
@@ -63,7 +74,7 @@ def vec_comp_execute_factory(idx):
 def vec_viz_execute_factory(idx):
     def execute(self, context):
         n = len([c for c in bpy.data.collections if c.name.startswith('run_')])
-        streamline_collection = bpy.data.collections.new(f'run_{n}')
+        streamline_collection = bpy.data.collections.new(f'vector_run_{n}')
         bpy.context.scene.collection.children.link(streamline_collection)
         alt_min = context.scene.tree_field_props[idx].alt_min
         alt_step = context.scene.tree_field_props[idx].alt_step
@@ -135,20 +146,56 @@ def vec_viz_execute_factory(idx):
         return {'FINISHED'}
     return execute
 
-def sca_comp_execute_factory(idx):
-    def execute(self, context): 
+def sca_viz_execute_factory(idx):
+    def execute(self, context):
+        n = len([c for c in bpy.data.collections if c.name.startswith('run_')])  
+        mat = sca_mat_nodes(context, idx)
+        scalar_collection = bpy.data.collections.new(f'scalar_run_{n}')
+        bpy.context.scene.collection.children.link(scalar_collection)
+        vals = np.array(interaction.read[idx].values[0])
         props = context.scene.tree_field_props[idx]
         point_radius = context.scene.tree_field_props[idx].point_radius
         displacement = context.scene.tree_field_props[idx].displacement
-        if displacement:
-            displacement_scale = context.scene.tree_field_props[idx].displacement_scale
-
-
-    return execute
+        coord_list = [] 
+        for i in range (len(interaction.read[idx].coords)):
+            coord_list.append(np.array(interaction.read[idx].coords[i]))
+        mask = np.ones(len(vals), dtype=bool)
+        for coord in coord_list:
+            mask &= ~np.isnan(coord)
+        mask &= ~np.isnan(vals)
+        coord_list = [coord[mask] for coord in coord_list]
+        vals = vals[mask]
+        d = len(coord_list[0])
+        if interaction.tree_config.fields[idx].altitude is not None:
+            coord_list.append(np.full(d, interaction.tree_config.fields[idx].altitude)) 
         
 
-def sca_viz_execute_factory(idx):
-    def execute(self, context): pass
+        x, y, z = convert_to_cart(coord_list[0], coord_list[1], coord_list[2]) 
+        if displacement:
+            displacement_scale = context.scene.tree_field_props[idx].displacement_scale
+            r = np.sqrt(x**2 + y**2 + z**2)
+            nudge = (vals - vals.mean()) * displacement_scale
+            x = x + nudge * (x / r)
+            y = y + nudge * (y / r)
+            z = z + nudge * (z / r)
+        flat_x_y_z = np.stack([x, y, z], axis=1).flatten()
+        norm_vals = (vals - vals.min()) / (vals.max() - vals.min())
+
+
+        pc = bpy.data.pointclouds.new('points')
+        pc.resize(d)
+
+        pc.points.foreach_set('co', flat_x_y_z) 
+
+        flat_r = np.full(d, point_radius)
+        pc.points.foreach_set('radius', flat_r)  
+        rad_attr = pc.attributes.new('radiance', 'FLOAT', 'POINT')
+        rad_attr.data.foreach_set('value', norm_vals)
+
+        obj = bpy.data.objects.new('scalar_field', pc)
+        obj.data.materials.append(mat)
+        scalar_collection.objects.link(obj)
+        return {'FINISHED'}
     return execute
 
 

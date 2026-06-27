@@ -121,3 +121,38 @@ def mat_nodes(context, i, idx):
     mat.diffuse_color = (r, g, b, 1.0)
     return mat
 
+def sca_mat_nodes(context, idx):
+    props = context.scene.tree_field_props[idx]
+    mat = bpy.data.materials.new(f'mat')
+    mat.use_nodes = True  
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+    nodes.clear()
+    radiance = nodes.new('ShaderNodeAttribute')
+    radiance.attribute_name = 'radiance'
+    radiance.attribute_type = 'GEOMETRY'
+
+    color_ramp = nodes.new('ShaderNodeValToRGB') 
+    color_ramp.color_ramp.elements[0].position = 0.0
+    color_ramp.color_ramp.elements[0].color = (0, 0, 0, 1)
+    color_ramp.color_ramp.elements[1].position = 1.0
+    color_ramp.color_ramp.elements[1].color = (1, 1, 1, 1)
+
+    transparent = nodes.new('ShaderNodeBsdfTransparent')
+    mix = nodes.new('ShaderNodeMixShader')
+    mix.inputs['Fac'].default_value = props.opacity
+
+
+    emission = nodes.new('ShaderNodeEmission')
+    emission.inputs['Strength'].default_value = props.strength
+    output = nodes.new('ShaderNodeOutputMaterial')
+
+    links.new(radiance.outputs['Fac'], color_ramp.inputs['Fac'])
+    links.new(color_ramp.outputs['Color'], emission.inputs['Color'])
+    links.new(transparent.outputs['BSDF'], mix.inputs[1])
+    links.new(emission.outputs['Emission'], mix.inputs[2])
+    links.new(mix.outputs['Shader'], output.inputs['Surface'])
+    mat.blend_method = 'BLEND'
+
+    return mat
+    
