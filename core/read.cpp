@@ -23,41 +23,93 @@ int Read::openNetCDF(const std::string& file_path, int NCFlag) {
    return file_id;
 }
 
+HDF5File::HDF5File(const std::string& file_path): file_id(Read::openHDF5File(file_path)) {}
+
+HDF5File::~HDF5File() {
+
+   H5Fclose(file_id);
+}
+
+hid_t Read::openHDF5File(const std::string& file_path) {
+   hid_t file_id = H5Fopen(file_path.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+   if (file_id < 0) throw std::runtime_error("Failed to open HDF5 file: " + file_path);
+   return file_id;
+}
+
 Read::Read(){}
 
 Read::Read(std::vector<std::vector<double>> coords_p, std::vector<std::vector<double>> values_p): coords(coords_p), values(values_p) {}
 
-Read::Read(const FieldConfig& field_config_p): coords(loadNetCDFCoords(field_config_p)), values(loadNetCDFValues(field_config_p)) {}
+Read::Read(const FieldConfig& field_config_p): coords(loadCoords(field_config_p)), values(loadValues(field_config_p)) {}
 
-std::vector<std::vector<double>> Read::loadNetCDFValues(const FieldConfig& field_config) {
-   std::filesystem::path p(field_config.source);
-   std::vector<std::vector<double>> NetCDF_values;
+std::vector<std::vector<double>> Read::loadCoords(const FieldConfig& field_config_p) {
+   std::filesystem::path p(field_config_p.source); 
+   std::vector<std::vector<double>> coords;
+
    if (p.extension() == ".nc") {
- 
-      NetCDFFile netcdf_file(field_config.source, NC_NOWRITE);    
-
-      if (field_config.variables.has_value()) {
-         for (const std::string& name : field_config.variables.value()) {  
-            NetCDF_values.push_back(readNetCDFVariable(netcdf_file.file_id, name));
-         }
-      } 
+      Read::loadNetCDFCoords(field_config_p, coords);
+      return coords;
    }
-   return NetCDF_values;
+   if (p.extension() == ".h5" || p.extension() == ".hdf5") {
+      Read::loadHDF5Coords(field_config_p, coords);
+      return coords;
+   }
+   throw std::runtime_error("Unsupported file format: " + p.extension().string());
 }
 
-std::vector<std::vector<double>> Read::loadNetCDFCoords(const FieldConfig& field_config) {
-   std::filesystem::path p(field_config.source);
-   std::vector<std::vector<double>> NetCDF_coords;
-   if (p.extension() == ".nc") { 
-      NetCDFFile netcdf_file(field_config.source, NC_NOWRITE);  
+std::vector<std::vector<double>> Read::loadValues(const FieldConfig& field_config_p) {
+   std::filesystem::path p(field_config_p.source); 
+   std::vector<std::vector<double>> values;
 
-      if (field_config.coordinates.has_value()) {
-         for (const std::string& name : field_config.coordinates.value()) {
-            NetCDF_coords.push_back(readNetCDFVariable(netcdf_file.file_id, name)); 
-         } 
-      } 
+   if (p.extension() == ".nc") {
+      Read::loadNetCDFValues(field_config_p, values);
+      return values;
    }
-   return NetCDF_coords;
+   if (p.extension() == ".h5" || p.extension() == ".hdf5") {
+      Read::loadHDF5Values(field_config_p, values);
+      return values;
+   }
+   throw std::runtime_error("Unsupported file format: " + p.extension().string());
+}
+
+void Read::loadNetCDFValues(const FieldConfig& field_config, std::vector<std::vector<double>> &values) { 
+ 
+   NetCDFFile netcdf_file(field_config.source, NC_NOWRITE);    
+
+   if (field_config.variables.has_value()) {
+      for (const std::string& name : field_config.variables.value()) {  
+         values.push_back(readNetCDFVariable(netcdf_file.file_id, name));
+      }
+   }  
+}
+
+void Read::loadNetCDFCoords(const FieldConfig& field_config, std::vector<std::vector<double>> &coords) {   
+   
+   NetCDFFile netcdf_file(field_config.source, NC_NOWRITE);  
+
+   if (field_config.coordinates.has_value()) {
+      for (const std::string& name : field_config.coordinates.value()) {
+         coords.push_back(readNetCDFVariable(netcdf_file.file_id, name)); 
+      } 
+   } 
+}
+
+void Read::loadHDF5Values(const FieldConfig &field_config, std::vector<std::vector<double>> &values) {
+   HDF5File hdf5_file(field_config.source);
+   if (field_config.variables.has_value()) {
+      for (const std::string& name : field_config.variables.value()) {
+         values.push_back(readHDF5Variable(hdf5_file.file_id, name));
+      }
+   }
+}
+
+void Read::loadHDF5Coords(const FieldConfig &field_config, std::vector<std::vector<double>> &coords) {
+   HDF5File hdf5_file(field_config.source);
+   if (field_config.coordinates.has_value()) {
+      for (const std::string& name : field_config.coordinates.value()) {
+         coords.push_back(readHDF5Variable(hdf5_file.file_id, name));
+      }
+   }
 }
 
 std::vector<double> Read::readNetCDFVariable(int file_id, const std::string& name) {
@@ -87,6 +139,22 @@ std::vector<double> Read::readNetCDFVariable(int file_id, const std::string& nam
    if (status != NC_NOERR) throw std::runtime_error(nc_strerror(status));
 
    return buffer; 
+}
+
+std::vector<double> Read::readHDF5Variable(hid_t file_id, const std::string& name) {
+
+   hid_t dataset_id = H5Dopen2(file_id, name.c_str(), H5P_DEFAULT);
+   if (dataset_id < 0) throw std::runtime_error("Failed to open dataset: " + name);
+
+   hid_t space_id = H5Dget_space(dataset_id);
+   hssize_t total = H5Sget_simple_extent_npoints(space_id);
+
+   std::vector<double> buffer(total);
+   H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, buffer.data());
+   H5Sclose(space_id);
+   H5Dclose(dataset_id);
+
+   return buffer;
 }
 
 int Read::bisection(const std::vector<double>& axis_line, double query, int index_low, int index_high) {
