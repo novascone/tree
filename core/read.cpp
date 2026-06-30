@@ -44,7 +44,7 @@ Read::Read(const FieldConfig& field_config_p): coords(loadCoords(field_config_p)
 
 std::vector<std::vector<double>> Read::loadCoords(const FieldConfig& field_config_p) {
    std::filesystem::path p(field_config_p.source); 
-   std::vector<std::vector<double>> coords;
+   std::vector<std::vector<double>> coords; 
 
    if (p.extension() == ".nc") {
       Read::loadNetCDFCoords(field_config_p, coords);
@@ -90,7 +90,10 @@ void Read::loadNetCDFCoords(const FieldConfig& field_config, std::vector<std::ve
    if (field_config.coordinates.has_value()) {
       for (const std::string& name : field_config.coordinates.value()) {
          coords.push_back(readNetCDFVariable(netcdf_file.file_id, name)); 
-      } 
+      }
+   if (field_config.coord_order.has_value()) {
+      Read::reorder(field_config, coords) ;
+   }
    } 
 }
 
@@ -112,6 +115,66 @@ void Read::loadHDF5Coords(const FieldConfig &field_config, std::vector<std::vect
    }
 }
 
+void Read::reorder_coords(const FieldConfig &field_config, std::vector<std::vector<double>> &coords) {
+   std::array<int, 3> perm;
+   std::vector<std::string> standard = {"lat", "lon", "alt"};
+   std::vector<std::vector<double>> reorder;
+   std::vector<std::string> coord_order = field_config.coord_order.value();
+   for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+         if (standard[i] == coord_order[j])
+            perm[i] = j;
+      }
+   }
+   for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+         if (perm[i] == j) {
+            reorder.push_back(coords[j]);
+         }
+      }
+   }
+   coords = reorder;
+}
+
+void Read::reorder_values(const FieldConfig &field_config, std::vector<std::vector<double>> &coords, std::vector<std::vector<double>> &values) {
+   std::array<int, 3> perm;
+   std::array<int, 3> inv_perm;
+   std::vector<std::string> standard = {"lat", "lon", "alt"}; 
+   std::vector<double> new_buffer; 
+   int n0 = coords[0].size();
+   int n1 = coords[1].size();
+   int n2 = coords[2].size();
+   new_buffer.resize(n0 * n1 * n2);
+   std::vector<std::string> coord_order = field_config.coord_order.value();
+   for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+         if (standard[i] == coord_order[j])
+            perm[i] = j;
+      }
+   }
+   for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+         if (perm[i] == j) {
+            inv_perm[j] = i; 
+         }
+      }
+   }
+
+   for (int v = 0; v < static_cast<int>(values.size()); v++) {
+      for (int i = 0; i < n0; i++) {
+         for (int j = 0; j < n1; j++) {
+            for (int k = 0; k < n2; k ++) {
+               std::array<int, 3> idx{i, j, k};
+               int new_idx = convertIDXFlat(i, j, k, n1, n2);
+               int old_idx = convertIDXFlat(idx[inv_perm[0]], idx[inv_perm[1]], idx[inv_perm[2]], coords[inv_perm[1]].size(), coords[inv_perm[2]].size());  
+               new_buffer[new_idx] = values[v][old_idx];
+            }
+         }
+      }
+   values[v] = new_buffer;
+   }
+}
+   
 std::vector<double> Read::readNetCDFVariable(int file_id, const std::string& name) {
    int var_id;
    int status = nc_inq_varid(file_id, name.c_str(), &var_id); 

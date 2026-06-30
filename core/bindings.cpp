@@ -58,6 +58,7 @@ PYBIND11_MODULE(tree_core, m) {
       .def_readwrite("grid_type", &FieldConfig::grid_type)
       .def_readwrite("variables", &FieldConfig::variables)
       .def_readwrite("coordinates", &FieldConfig::coordinates)
+      .def_readwrite("coord_order", &FieldConfig::coord_order)
       .def_readwrite("coordinate_system", &FieldConfig::coordinate_system)
       .def_readwrite("altitude", &FieldConfig::altitude);
     

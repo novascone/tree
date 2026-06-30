@@ -19,6 +19,7 @@ class FieldConfig:
     variables:str | None
     coordinates:str | None 
     coordinate_system:str | None
+    coord_order:str | None
     altitude:float | None
 
     def __init__(self):
@@ -29,6 +30,7 @@ class FieldConfig:
         self.variables = None
         self.coordinates = None
         self.coordinate_system = None
+        self.coord_order = None
         self.altitude = None
 
 class TREEConfig:
@@ -91,7 +93,9 @@ def traverse(TREE_Config, valid_tree, parent = None) -> TREEConfig:
             field.source = cast(valid_tree.attributes["source"]) 
             field.coordinate_system = cast(valid_tree.attributes["coordinate_system"]) 
             field.variables = cast(valid_tree.attributes["variables"])
-            field.coordinates = cast(valid_tree.attributes["coordinates"]) 
+            field.coordinates = cast(valid_tree.attributes["coordinates"])
+            if "coord_order" in valid_tree.attributes:
+                field.coord_order = cast(valid_tree.attributes["coord_order"])
             if valid_tree.attributes["type"] == "scalar":
                 if "altitude" in valid_tree.attributes:
                     field.altitude = cast(valid_tree.attributes["altitude"])
