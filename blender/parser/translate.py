@@ -27,8 +27,8 @@ def translate(TREE_input) -> tree_core.TREEConfig:
             coordinates = field.coordinates.split(" ")
             for coord in coordinates:
                 fieldBind.coordinates.append(coord)
-        fieldBind.coord_order = tree_core.StringVector()
         if field.coord_order:
+            fieldBind.coord_order = tree_core.StringVector()
             coord_order = field.coord_order.split(" ")
             for place in coord_order:
                 fieldBind.coord_order.append(place)

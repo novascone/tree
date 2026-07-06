@@ -40,7 +40,7 @@ Read::Read(){}
 
 Read::Read(std::vector<std::vector<double>> coords_p, std::vector<std::vector<double>> values_p): coords(coords_p), values(values_p) {}
 
-Read::Read(const FieldConfig& field_config_p): coords(loadCoords(field_config_p)), values(loadValues(field_config_p)) {}
+Read::Read(const FieldConfig& field_config_p): coords(loadCoords(field_config_p)), values(loadValues(field_config_p, coords)) {}
 
 std::vector<std::vector<double>> Read::loadCoords(const FieldConfig& field_config_p) {
    std::filesystem::path p(field_config_p.source); 
@@ -57,22 +57,22 @@ std::vector<std::vector<double>> Read::loadCoords(const FieldConfig& field_confi
    throw std::runtime_error("Unsupported file format: " + p.extension().string());
 }
 
-std::vector<std::vector<double>> Read::loadValues(const FieldConfig& field_config_p) {
+std::vector<std::vector<double>> Read::loadValues(const FieldConfig& field_config_p, const std::vector<std::vector<double>>& coords) {
    std::filesystem::path p(field_config_p.source); 
    std::vector<std::vector<double>> values;
 
    if (p.extension() == ".nc") {
-      Read::loadNetCDFValues(field_config_p, values);
+      Read::loadNetCDFValues(field_config_p, coords, values);
       return values;
    }
    if (p.extension() == ".h5" || p.extension() == ".hdf5") {
-      Read::loadHDF5Values(field_config_p, values);
+      Read::loadHDF5Values(field_config_p, coords, values);
       return values;
    }
    throw std::runtime_error("Unsupported file format: " + p.extension().string());
 }
 
-void Read::loadNetCDFValues(const FieldConfig& field_config, std::vector<std::vector<double>> &values) { 
+void Read::loadNetCDFValues(const FieldConfig& field_config, const std::vector<std::vector<double>>& coords, std::vector<std::vector<double>>& values) { 
  
    NetCDFFile netcdf_file(field_config.source, NC_NOWRITE);    
 
@@ -80,6 +80,9 @@ void Read::loadNetCDFValues(const FieldConfig& field_config, std::vector<std::ve
       for (const std::string& name : field_config.variables.value()) {  
          values.push_back(readNetCDFVariable(netcdf_file.file_id, name));
       }
+   if (field_config.coord_order.has_value()) {
+      Read::reorder_values(field_config, coords, values);
+   }
    }  
 }
 
@@ -92,17 +95,20 @@ void Read::loadNetCDFCoords(const FieldConfig& field_config, std::vector<std::ve
          coords.push_back(readNetCDFVariable(netcdf_file.file_id, name)); 
       }
    if (field_config.coord_order.has_value()) {
-      Read::reorder(field_config, coords) ;
+      Read::reorder_coords(field_config, coords) ;
    }
    } 
 }
 
-void Read::loadHDF5Values(const FieldConfig &field_config, std::vector<std::vector<double>> &values) {
+void Read::loadHDF5Values(const FieldConfig &field_config, const std::vector<std::vector<double>>& coords, std::vector<std::vector<double>> &values) {
    HDF5File hdf5_file(field_config.source);
    if (field_config.variables.has_value()) {
       for (const std::string& name : field_config.variables.value()) {
          values.push_back(readHDF5Variable(hdf5_file.file_id, name));
       }
+   }
+   if (field_config.coord_order.has_value()) {
+      Read::reorder_values(field_config, coords, values);
    }
 }
 
@@ -112,6 +118,9 @@ void Read::loadHDF5Coords(const FieldConfig &field_config, std::vector<std::vect
       for (const std::string& name : field_config.coordinates.value()) {
          coords.push_back(readHDF5Variable(hdf5_file.file_id, name));
       }
+   if (field_config.coord_order.has_value()) {
+      Read::reorder_coords(field_config, coords) ;
+   }
    }
 }
 
@@ -136,7 +145,7 @@ void Read::reorder_coords(const FieldConfig &field_config, std::vector<std::vect
    coords = reorder;
 }
 
-void Read::reorder_values(const FieldConfig &field_config, std::vector<std::vector<double>> &coords, std::vector<std::vector<double>> &values) {
+void Read::reorder_values(const FieldConfig &field_config, const std::vector<std::vector<double>> &coords, std::vector<std::vector<double>> &values) {
    std::array<int, 3> perm;
    std::array<int, 3> inv_perm;
    std::vector<std::string> standard = {"lat", "lon", "alt"}; 
