@@ -29,7 +29,7 @@ struct Derivative {
          for (int i = 0; i < static_cast<int>(arbitrary.size()); i++) { 
             if ( i == 0) derivative[i] = arbitrary[i] / lat_con; 
             if ( i == 1) derivative[i] = arbitrary[i] / lon_con;
-            if ( i == 2) derivative[i] = arbitrary[i] / 1000;
+            if ( i == 2) derivative[i] = arbitrary[i];
          }
       }
       else {

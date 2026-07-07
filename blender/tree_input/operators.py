@@ -88,7 +88,7 @@ def vec_viz_execute_factory(idx):
             t0 = time.perf_counter()
             mat = mat_nodes(context, i, idx)
             t_mat += time.perf_counter() - t0
-            alt_collection = bpy.data.collections.new(f'{alts[i]}_km')
+            alt_collection = bpy.data.collections.new(f'{alts[i]}_m')
             streamline_collection.children.link(alt_collection) 
             
             alt_streams = [s for s in interaction.streamlines[idx] if len(s) > 0.0 and abs(s[0][2] - alt) < 0.01]
@@ -137,7 +137,7 @@ def vec_viz_execute_factory(idx):
             arc_attr.data.foreach_set('value', flat_arc)
 
 
-            obj = bpy.data.objects.new(f'alt_{alt}_km', curve_data)
+            obj = bpy.data.objects.new(f'alt_{alt}_m', curve_data)
             obj.data.materials.append(mat)
             alt_collection.objects.link(obj)
             t_points += time.perf_counter() - t0
