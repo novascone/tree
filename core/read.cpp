@@ -40,7 +40,7 @@ Read::Read(){}
 
 Read::Read(std::vector<std::vector<double>> coords_p, std::vector<std::vector<double>> values_p): coords(coords_p), values(values_p) {}
 
-Read::Read(const FieldConfig& field_config_p): coords(loadCoords(field_config_p)), values(loadValues(field_config_p, coords)) {}
+Read::Read(const FieldConfig& field_config_p):  coords(loadCoords(field_config_p)), values(loadValues(field_config_p, coords)), sentinel(field_config_p.sentinel) {}
 
 std::vector<std::vector<double>> Read::loadCoords(const FieldConfig& field_config_p) {
    std::filesystem::path p(field_config_p.source); 
@@ -245,8 +245,8 @@ int Read::bisection(const std::vector<double>& axis_line, double query, int inde
       }
       else {
          index_middle = ((index_high + index_low) / 2);
-         if (query <= axis_line[index_middle]) index_high = index_middle;
-         else index_low = index_middle;  
+         if (query <= axis_line[index_middle]) index_low = index_middle;
+         else index_high = index_middle;  
       }
    }
    return index_low;

@@ -32,6 +32,8 @@ def translate(TREE_input) -> tree_core.TREEConfig:
             coord_order = field.coord_order.split(" ")
             for place in coord_order:
                 fieldBind.coord_order.append(place)
+        if field.sentinel is not None:
+            fieldBind.sentinel = field.sentinel
         if field.type == "scalar": 
             if field.altitude is not None:
                 fieldBind.altitude = field.altitude

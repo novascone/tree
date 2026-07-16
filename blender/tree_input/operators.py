@@ -100,8 +100,11 @@ def vec_viz_execute_factory(idx):
             positions = np.stack([lats_np, lons_np, alts_np], axis=1)
             speeds = get_speeds(positions, idx)
             normalized_speeds = np.zeros(len(speeds))
-            if speeds.max() != 0:
-                normalized_speeds = speeds / speeds.max() 
+
+            if len(speeds) > 0:
+                percentile_clamp = np.percentile(speeds, 99)
+                if percentile_clamp != 0:
+                    normalized_speeds = np.clip(speeds / percentile_clamp, 0, 1) 
             
             x, y, z = convert_to_cart(lats_np, lons_np, alts_np)
             flat_x_y_z = np.stack([x, y, z], axis=1).flatten()

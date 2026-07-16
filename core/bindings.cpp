@@ -60,7 +60,8 @@ PYBIND11_MODULE(tree_core, m) {
       .def_readwrite("coordinates", &FieldConfig::coordinates)
       .def_readwrite("coord_order", &FieldConfig::coord_order)
       .def_readwrite("coordinate_system", &FieldConfig::coordinate_system)
-      .def_readwrite("altitude", &FieldConfig::altitude);
+      .def_readwrite("altitude", &FieldConfig::altitude)
+      .def_readwrite("sentinel", &FieldConfig::sentinel);
     
    py::class_<TREEConfig>(m, "TREEConfig")
       .def(py::init<>())

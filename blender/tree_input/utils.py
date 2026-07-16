@@ -62,11 +62,14 @@ def arc_length(points):
     lengths= np.concatenate([[0.0], np.cumsum(norms)])
     return lengths
 
-def get_speeds(positions, idx):
+def get_speeds(positions, idx): 
     tri_interp = tree_core.TriInterp(interaction.read[idx])
     speeds = np.zeros(len(positions))
     for i, pos in enumerate(positions):
-        speeds[i] = np.linalg.norm(tri_interp.interp(pos))
+        try:
+            speeds[i] = np.linalg.norm(tri_interp.interp(pos))
+        except RuntimeError:
+            pass
     return speeds
 
 

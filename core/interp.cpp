@@ -1,5 +1,6 @@
 
 #include "interp.h"
+#include <stdexcept>
 
 TriInterp::TriInterp(Read& data) : loaded_data(data), saved_index{}, correlated{} {
 
@@ -130,6 +131,15 @@ std::vector<double> TriInterp::interp(std::array<double, 3> position) {
    t = (position[0] - neighbors[0].coords[0]) / (neighbors[x_high_index].coords[0] - neighbors[low_index].coords[0]);   
    u = (position[1] - neighbors[0].coords[1]) / (neighbors[y_high_index].coords[1] - neighbors[low_index].coords[1]);
    v = (position[2] - neighbors[0].coords[2]) / (neighbors[z_high_index].coords[2] - neighbors[low_index].coords[2]);
+
+   if (loaded_data.sentinel.has_value()) {  
+      for (int i = 0; i < static_cast<int>(neighbors[0].values.size()); i++) {
+         for (int j = 0; j < 8; j++) {
+            if (neighbors[j].values[i] == loaded_data.sentinel) throw std::runtime_error("missing value in interpolation neighbor");
+         }
+      }
+
+   }
    
    for (int i = 0; i < static_cast<int>(neighbors[0].values.size()); i++) {
       interp_value[i] = (1-t) * (1-u) * (1-v) * neighbors[0].values[i]

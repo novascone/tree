@@ -29,6 +29,7 @@ struct FieldConfig {
    std::optional<std::vector<std::string>> coordinates;
    std::optional<std::vector<std::string>> coord_order;
    std::optional<double> altitude;
+   std::optional<double> sentinel;
 };
 
 struct TREEConfig {

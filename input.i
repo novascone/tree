@@ -23,6 +23,7 @@
    coordinates = /Geometry/Geometric_height_levels /Geometry/Latitudes_1d /Geometry/Longitudes_1d 
    coord_order = alt lat lon
    coordinate_system = geographic
+   sentinel = -99999.0
   []
   [AWE]
    type = scalar
@@ -31,6 +32,6 @@
    variables = Radiance
    coordinates = Latitude Longitude 
    coordinate_system = geographic
-   altitude = 85
+   altitude = 85000
   [] 
 []

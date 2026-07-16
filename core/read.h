@@ -40,7 +40,8 @@ class Read {
       
    public:
    const std::vector<std::vector<double>> coords;
-   const std::vector<std::vector<double>> values;  
+   const std::vector<std::vector<double>> values;
+   const std::optional<double> sentinel;
    Read();
    Read(std::vector<std::vector<double>> coords, std::vector<std::vector<double>> values);
    Read(const FieldConfig& field_config_p); 
