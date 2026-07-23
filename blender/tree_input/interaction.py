@@ -102,8 +102,13 @@ def draw_factory(idx):
                 stream_box.prop(props, "anim_speed")
                 stream_box.prop(props, "spot_width")
                 stream_box.prop(props, "spot_strength")
+                stream_box.prop(props, "threshold")
+                stream_box.prop(props, "alt_min_val")
+                stream_box.prop(props, "alt_max_val")
+                stream_box.prop(props, "point_radius")
                 stream_box.operator(f'tree.compute_{idx}')
                 stream_box.operator(f'tree.visualize_vector_{idx}')
+                stream_box.operator(f'tree.visualize_vector_as_scalar_{idx}')
         elif tree_config.fields[idx].type == "scalar":
             scalar_box = layout.box()
             scalar_box.prop(props, "opacity")
@@ -150,6 +155,9 @@ class FieldProperties(bpy.types.PropertyGroup):
     anim_speed: FloatProperty(name="Anim Speed", default=0.01, min=0.001, max=1.0)
     spot_width: FloatProperty(name="Spot Width", default=0.1, min=0.01, max=1.0) 
     spot_strength: FloatProperty(name="Spot Strength", default=1.0)
+    threshold: FloatProperty(name="Threshold", default=1.0)
+    alt_min_val: FloatProperty(name="Minimum Altitude", default=10000.0)
+    alt_max_val: FloatProperty(name="Maximum Altitude", default=18000.0)
     color_mode: EnumProperty(
         name="Color Mode",
         items=[

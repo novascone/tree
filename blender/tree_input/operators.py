@@ -26,10 +26,17 @@ def register_field_operators():
                 'bl_idname': f'tree.compute_{i}',
                 'execute': vec_comp_execute_factory(i),
             })
+            vis_sca_class = type(f'TREE_OT_vector_as_scalar_operator_{i}', (bpy.types.Operator,), {
+                'bl_label': f'Visualize Vector Field as Scalar Field',
+                'bl_idname': f'tree.visualize_vector_as_scalar_{i}',
+                'execute': vis_vec_as_sca_execute_factory(i),
+            })
             bpy.utils.register_class(vis_cls)
             bpy.utils.register_class(op_cls)
+            bpy.utils.register_class(vis_sca_class)
             interaction._field_operators.append(vis_cls)
             interaction._field_operators.append(op_cls)
+            interaction._field_operators.append(vis_sca_class)
         elif field_type == "scalar":
             vis_cls = type(f'TREE_OT_visualization_operator_{i}', (bpy.types.Operator,), {
                 'bl_label': f'Visualize Scalar',
@@ -148,6 +155,56 @@ def vec_viz_execute_factory(idx):
         print(f"mat: {t_mat:.3f}s points: {t_points:.3f}s")
         return {'FINISHED'}
     return execute
+
+def vis_vec_as_sca_execute_factory(idx):
+    def execute(self, context):
+        n = len([c for c in bpy.data.collections if c.name.startswith('run_')]) 
+        props = context.scene.tree_field_props[idx]
+        point_radius = context.scene.tree_field_props[idx].point_radius 
+
+        seeds = stratified_random(props.lat_cell, props.lon_cell, props.alt_cell, 90, -90, 180, -180,
+                                  props.alt_max, props.alt_min)
+
+        positions = np.array(seeds)
+        positions[:, 1] = positions[:, 1] % 360 # NAVGEM 
+        vals = get_speeds(positions, idx)
+
+        mask = vals >= props.threshold
+        positions = positions[mask]
+        vals = vals[mask]
+
+        d = len(vals)
+
+        if d == 0:
+            self.report({'WARNING'}, "No points meet the threshold")
+            return {'CANCELLED'}
+
+        mat = sca_mat_nodes(context, idx)
+        sca_viz_collection = bpy.data.collections.new(f'sca_viz_run_{n}')
+        bpy.context.scene.collection.children.link(sca_viz_collection) 
+        
+
+        x, y, z = convert_to_cart(positions[:, 0], positions[:, 1], positions[:, 2]) 
+        flat_x_y_z = np.stack([x, y, z], axis=1).flatten()
+        norm_vals = (vals - vals.min()) / (vals.max() - vals.min())
+
+
+        pc = bpy.data.pointclouds.new('points')
+        pc.resize(d)
+
+        pc.points.foreach_set('co', flat_x_y_z) 
+
+        flat_r = np.full(d, point_radius)
+        pc.points.foreach_set('radius', flat_r)  
+        rad_attr = pc.attributes.new('radiance', 'FLOAT', 'POINT')
+        rad_attr.data.foreach_set('value', norm_vals)
+
+        obj = bpy.data.objects.new('scalar_field', pc)
+        obj.data.materials.append(mat)
+        sca_viz_collection.objects.link(obj)
+        return {'FINISHED'}
+    return execute
+
 
 def sca_viz_execute_factory(idx):
     def execute(self, context):
