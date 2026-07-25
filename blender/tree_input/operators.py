@@ -1,6 +1,7 @@
 
 from .. import tree_core
 import bpy
+import os
 import random
 import time
 import math
@@ -223,6 +224,7 @@ def volumetric_visualization_factory(idx):
 
         grid = vdb.FloatGrid()
         grid.transform = transform
+        grid.name = "density"
 
         accessor = grid.getAccessor()
 
@@ -262,6 +264,24 @@ def volumetric_visualization_factory(idx):
                         z = k * voxel_size
                         lat, lon, alt = invert_coords(R, x, y, z)
                         lla.append((lat, lon, alt))
+
+        lla = np.array(lla)
+
+        mags = get_speeds(lla, idx)
+
+        for coord, mag in zip(ijk, mags):
+            accessor.setValueOn(coord, mag)
+
+        path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "vdb", str(idx)))
+        file_path = os.path.join(path,  "field-volume.vdb")
+        os.makedirs(path, exist_ok=True)
+        vdb.write(file_path, grids=[grid])
+        bpy.ops.object.volume_import(filepath=file_path)
+
+        return {'FINISHED'}
+    return execute
+        
+
 
                             
 def invert_coords(R, x, y, z):
