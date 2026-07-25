@@ -1,10 +1,11 @@
 
-
 from .. import tree_core
 import bpy
 import random
 import time
+import math
 import numpy as np
+import openvdb as vdb
 from . import interaction
 from .materials import mat_nodes, sca_mat_nodes
 from .utils import convert_to_cart, arc_length, get_speeds, fibonacci_sphere, stratified_random
@@ -204,6 +205,73 @@ def vis_vec_as_sca_execute_factory(idx):
         sca_viz_collection.objects.link(obj)
         return {'FINISHED'}
     return execute
+
+def volumetric_visualization_factory(idx):
+    def execute(self, context):
+        n = len([c for c in bpy.data.collections if c.name.startswith('run_')])
+        props = context.scene.tree_field_props[idx]
+
+        R = 6371000.0
+        alt_max = props.alt_max
+        alt_min = props.alt_min
+        r_max = (R + alt_max) / R
+        r_min = (R + alt_min) / R
+
+        voxel_size = 0.00175
+
+        transform = vdb.createLinearTransform(voxelSize=voxel_size)
+
+        grid = vdb.FloatGrid()
+        grid.transform = transform
+
+        accessor = grid.getAccessor()
+
+        N = math.ceil(r_max / voxel_size)
+
+
+        ijk = []
+        lla = []
+ 
+        for i in range(-N, N+1):
+            for j in range(-N, N+1):
+                x = i * voxel_size
+                y = j * voxel_size 
+                d = math.sqrt(x**2 + y**2)
+                if d > r_max:
+                    continue
+                elif d > r_min:
+                    z_outer = math.sqrt(r_max**2 - d**2) / voxel_size
+                    k_bound = math.ceil(z_outer)
+                    for k in range(-k_bound, k_bound+1):
+                        ijk.append((i,j,k))
+                        z = k * voxel_size
+                        lat, lon, alt = invert_coords(R, x, y, z)
+                        lla.append((lat, lon, alt))
+                else:
+                    z_outer = math.sqrt(r_max**2 - d**2) / voxel_size
+                    z_inner = math.sqrt(r_min**2 - d**2) / voxel_size
+                    k_upper = math.ceil(z_outer)
+                    k_lower = math.floor(z_inner)
+                    for k in range(k_lower, k_upper+1):
+                        ijk.append((i,j,k))
+                        z = k * voxel_size
+                        lat, lon, alt = invert_coords(R, x, y, z)
+                        lla.append((lat,lon,alt))
+                    for k in range(-k_upper, -k_lower+1):
+                        ijk.append((i,j,k))
+                        z = k * voxel_size
+                        lat, lon, alt = invert_coords(R, x, y, z)
+                        lla.append((lat, lon, alt))
+
+                            
+def invert_coords(R, x, y, z):
+    r = math.sqrt(x**2 + y**2 + z**2)
+    lat = math.degrees(math.asin(z/r))
+    lon = math.degrees(math.atan2(y, x)) % 360
+    alt = R * (r - 1)
+        
+    return lat, lon, alt
+
 
 
 def sca_viz_execute_factory(idx):
