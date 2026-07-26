@@ -155,4 +155,18 @@ def sca_mat_nodes(context, idx):
     mat.blend_method = 'BLEND'
 
     return mat
+
+def volume_mat_nodes(context, idx):
+    props = context.scene.tree_field_props[idx]
+    mat = bpy.data.materials.new(f'mat') 
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+    nodes.clear()
+    pv = nodes.new('ShaderNodeVolumePrincipled')
+    output = nodes.new('ShaderNodeOutputMaterial')
+
+    links.new(pv.outputs['Volume'], output.inputs['Volume'])
+
+    return mat
     

@@ -108,7 +108,7 @@ def draw_factory(idx):
                 stream_box.prop(props, "point_radius")
                 stream_box.operator(f'tree.compute_{idx}')
                 stream_box.operator(f'tree.visualize_vector_{idx}')
-                stream_box.operator(f'tree.visualize_vector_as_scalar_{idx}')
+                stream_box.operator(f'tree.volumize_field_{idx}')
         elif tree_config.fields[idx].type == "scalar":
             scalar_box = layout.box()
             scalar_box.prop(props, "opacity")

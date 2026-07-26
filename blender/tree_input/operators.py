@@ -8,7 +8,7 @@ import math
 import numpy as np
 import openvdb as vdb
 from . import interaction
-from .materials import mat_nodes, sca_mat_nodes
+from .materials import mat_nodes, sca_mat_nodes, volume_mat_nodes
 from .utils import convert_to_cart, arc_length, get_speeds, fibonacci_sphere, stratified_random
 
 def register_field_operators(): 
@@ -28,17 +28,17 @@ def register_field_operators():
                 'bl_idname': f'tree.compute_{i}',
                 'execute': vec_comp_execute_factory(i),
             })
-            vis_sca_class = type(f'TREE_OT_vector_as_scalar_operator_{i}', (bpy.types.Operator,), {
-                'bl_label': f'Visualize Vector Field as Scalar Field',
-                'bl_idname': f'tree.visualize_vector_as_scalar_{i}',
-                'execute': vis_vec_as_sca_execute_factory(i),
+            vol_class = type(f'TREE_OT_volumize_field_{i}', (bpy.types.Operator,), {
+                'bl_label': f'Volumize Field',
+                'bl_idname': f'tree.volumize_field_{i}',
+                'execute': volumetric_visualization_factory(i),
             })
             bpy.utils.register_class(vis_cls)
             bpy.utils.register_class(op_cls)
-            bpy.utils.register_class(vis_sca_class)
+            bpy.utils.register_class(vol_class)
             interaction._field_operators.append(vis_cls)
             interaction._field_operators.append(op_cls)
-            interaction._field_operators.append(vis_sca_class)
+            interaction._field_operators.append(vol_class)
         elif field_type == "scalar":
             vis_cls = type(f'TREE_OT_visualization_operator_{i}', (bpy.types.Operator,), {
                 'bl_label': f'Visualize Scalar',
@@ -210,6 +210,8 @@ def vis_vec_as_sca_execute_factory(idx):
 def volumetric_visualization_factory(idx):
     def execute(self, context):
         n = len([c for c in bpy.data.collections if c.name.startswith('run_')])
+        volume_collection = bpy.data.collections.new(f'volume_run_{n}')
+        bpy.context.scene.collection.children.link(volume_collection)
         props = context.scene.tree_field_props[idx]
 
         R = 6371000.0
@@ -218,7 +220,7 @@ def volumetric_visualization_factory(idx):
         r_max = (R + alt_max) / R
         r_min = (R + alt_min) / R
 
-        voxel_size = 0.00175
+        voxel_size = 0.00062
 
         transform = vdb.createLinearTransform(voxelSize=voxel_size)
 
@@ -231,45 +233,186 @@ def volumetric_visualization_factory(idx):
         N = math.ceil(r_max / voxel_size)
 
 
-        ijk = []
-        lla = []
- 
-        for i in range(-N, N+1):
-            for j in range(-N, N+1):
-                x = i * voxel_size
-                y = j * voxel_size 
-                d = math.sqrt(x**2 + y**2)
-                if d > r_max:
-                    continue
-                elif d > r_min:
-                    z_outer = math.sqrt(r_max**2 - d**2) / voxel_size
-                    k_bound = math.ceil(z_outer)
-                    for k in range(-k_bound, k_bound+1):
-                        ijk.append((i,j,k))
-                        z = k * voxel_size
-                        lat, lon, alt = invert_coords(R, x, y, z)
-                        lla.append((lat, lon, alt))
-                else:
-                    z_outer = math.sqrt(r_max**2 - d**2) / voxel_size
-                    z_inner = math.sqrt(r_min**2 - d**2) / voxel_size
-                    k_upper = math.ceil(z_outer)
-                    k_lower = math.floor(z_inner)
-                    for k in range(k_lower, k_upper+1):
-                        ijk.append((i,j,k))
-                        z = k * voxel_size
-                        lat, lon, alt = invert_coords(R, x, y, z)
-                        lla.append((lat,lon,alt))
-                    for k in range(-k_upper, -k_lower+1):
-                        ijk.append((i,j,k))
-                        z = k * voxel_size
-                        lat, lon, alt = invert_coords(R, x, y, z)
-                        lla.append((lat, lon, alt))
+        #ijk = []
+        #lla = []
 
-        lla = np.array(lla)
+        xy = np.arange(-N, N+1)
+        X, Y = np.meshgrid(xy, xy, indexing='ij')
+        X = X.ravel()
+        Y = Y.ravel()
+
+        x = X * voxel_size
+        y = Y * voxel_size
+        d = np.sqrt(x**2 + y**2)
+
+        active_mask = d <= r_max
+
+        X = X[active_mask]
+        Y = Y[active_mask]
+        x = x[active_mask]
+        y = y[active_mask]
+        d = d[active_mask]
+
+        z_outer = np.sqrt(r_max**2 - d**2) / voxel_size
+
+        one_band_mask = d > r_min
+        two_band_mask = ~one_band_mask
+        
+        z_outer_one = z_outer[one_band_mask]
+        z_outer_two = z_outer[two_band_mask]
+
+        del z_outer
+
+        X_one = X[one_band_mask]
+        Y_one = Y[one_band_mask]
+        x_one = x[one_band_mask]
+        y_one = y[one_band_mask]
+        d_one = d[one_band_mask]
+
+        X_two = X[two_band_mask]
+        Y_two = Y[two_band_mask]
+        x_two = x[two_band_mask]
+        y_two = y[two_band_mask]
+        d_two = d[two_band_mask]
+
+        del X
+        del Y
+        del x
+        del y
+        del d
+
+        z_inner = (np.sqrt(r_min**2 - d_two**2)) / voxel_size
+
+        k_bound = np.ceil(z_outer_one).astype(int)
+        k_upper = np.ceil(z_outer_two).astype(int)
+        k_lower = np.floor(z_inner).astype(int)
+
+        counts_one = 2 * k_bound + 1
+        X_one_rep = np.repeat(X_one, counts_one)
+        Y_one_rep = np.repeat(Y_one, counts_one)
+        x_one_rep = np.repeat(x_one, counts_one)
+        y_one_rep = np.repeat(y_one, counts_one)
+
+        starts_one = np.cumsum(counts_one) - counts_one
+        starts_one_rep = np.repeat(starts_one, counts_one)
+
+        total = counts_one.sum()
+        local = np.arange(total) - starts_one_rep 
+
+        k_one_rep = np.repeat(-k_bound, counts_one) + local
+
+        counts_two = k_upper - k_lower + 1
+
+        X_two_rep = np.repeat(X_two, counts_two)
+        Y_two_rep = np.repeat(Y_two, counts_two)
+        x_two_rep = np.repeat(x_two, counts_two)
+        y_two_rep = np.repeat(y_two, counts_two)
+
+        del X_one
+        del X_two
+        del Y_one
+        del Y_two
+        del x_one
+        del x_two
+        del y_one
+        del y_two
+        del d_one
+        del d_two
+
+        starts_two = np.cumsum(counts_two) - counts_two
+        starts_two_rep = np.repeat(starts_two, counts_two)
+
+        total_two = counts_two.sum()
+        local_two = np.arange(total_two) - starts_two_rep
+
+        k_two_rep = np.repeat(k_lower, counts_two) + local_two
+
+        X_two_mir = np.concatenate((X_two_rep, X_two_rep))
+        Y_two_mir = np.concatenate((Y_two_rep, Y_two_rep))
+        x_two_mir = np.concatenate((x_two_rep, x_two_rep))
+        y_two_mir = np.concatenate((y_two_rep, y_two_rep)) 
+        k_two_mir = np.concatenate((k_two_rep, -k_two_rep))
+
+        X_final = np.concatenate((X_one_rep, X_two_mir))
+        del X_one_rep
+        del X_two_mir
+        Y_final = np.concatenate((Y_one_rep, Y_two_mir))
+        del Y_one_rep
+        del Y_two_mir
+        x_final = np.concatenate((x_one_rep, x_two_mir))
+        del x_one_rep
+        del x_two_mir
+        y_final = np.concatenate((y_one_rep, y_two_mir))
+        del y_one_rep
+        del y_two_mir
+        k_final = np.concatenate((k_one_rep, k_two_mir))
+        del k_one_rep
+        del k_two_mir
+        z_final = k_final * voxel_size
+
+        lat, lon, alt = invert_coords(R, x_final, y_final, z_final)
+        XYZ = np.stack((X_final, Y_final, k_final), axis=1)
+        lla = np.stack((lat, lon, alt), axis=1)
+
+        del X_final
+        del Y_final
+        del x_final
+        del y_final
+        del k_final
+        del z_final
+        del lat
+        del lon
+        del alt
+ 
+        #for i in range(-N, N+1):
+        #    for j in range(-N, N+1):
+        #        x = i * voxel_size
+        #        y = j * voxel_size 
+        #        d = math.sqrt(x**2 + y**2)
+        #        if d > r_max:
+        #            continue
+        #        elif d > r_min:
+        #            z_outer = math.sqrt(r_max**2 - d**2) / voxel_size
+        #            k_bound = math.ceil(z_outer)
+        #            for k in range(-k_bound, k_bound+1):
+        #                ijk.append((i,j,k))
+        #                z = k * voxel_size
+        #                lat, lon, alt = invert_coords(R, x, y, z)
+        #                lla.append((lat, lon, alt))
+        #        else:
+        #            z_outer = math.sqrt(r_max**2 - d**2) / voxel_size
+        #            z_inner = math.sqrt(r_min**2 - d**2) / voxel_size
+        #            k_upper = math.ceil(z_outer)
+        #            k_lower = math.floor(z_inner)
+        #            for k in range(k_lower, k_upper+1):
+        #                ijk.append((i,j,k))
+        #                z = k * voxel_size
+        #                lat, lon, alt = invert_coords(R, x, y, z)
+        #                lla.append((lat,lon,alt))
+        #            for k in range(-k_upper, -k_lower+1):
+        #                ijk.append((i,j,k))
+        #                z = k * voxel_size
+        #                lat, lon, alt = invert_coords(R, x, y, z)
+        #                lla.append((lat, lon, alt))
+
+        #lla = np.array(lla)
+        #ijk = np.array(ijk)
 
         mags = get_speeds(lla, idx)
 
-        for coord, mag in zip(ijk, mags):
+        mask = mags >= props.threshold
+        XYZ = XYZ[mask] 
+        mags = mags[mask]
+
+        d = len(mags)
+
+        if d == 0:
+            self.report({'WARNING'}, "No points meet the threshold")
+            return {'CANCELLED'}
+
+        mat = volume_mat_nodes(context, idx)
+
+        for coord, mag in zip(XYZ, mags):
             accessor.setValueOn(coord, mag)
 
         path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "vdb", str(idx)))
@@ -277,6 +420,13 @@ def volumetric_visualization_factory(idx):
         os.makedirs(path, exist_ok=True)
         vdb.write(file_path, grids=[grid])
         bpy.ops.object.volume_import(filepath=file_path)
+        obj = context.active_object
+
+        for collection in obj.users_collection:
+            collection.objects.unlink(obj)
+        
+        obj.data.materials.append(mat)
+        volume_collection.objects.link(obj)
 
         return {'FINISHED'}
     return execute
@@ -285,9 +435,9 @@ def volumetric_visualization_factory(idx):
 
                             
 def invert_coords(R, x, y, z):
-    r = math.sqrt(x**2 + y**2 + z**2)
-    lat = math.degrees(math.asin(z/r))
-    lon = math.degrees(math.atan2(y, x)) % 360
+    r = np.sqrt(x**2 + y**2 + z**2)
+    lat = np.degrees(np.arcsin(z/r))
+    lon = np.degrees(np.arctan2(y, x)) % 360
     alt = R * (r - 1)
         
     return lat, lon, alt
