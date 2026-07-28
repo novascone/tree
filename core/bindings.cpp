@@ -20,6 +20,7 @@ PYBIND11_MODULE(tree_core, m) {
  
    py::bind_vector<std::vector<FieldConfig>>(m, "FieldConfigList");
    py::bind_vector<std::vector<std::string>>(m, "StringVector"); 
+   py::bind_vector<std::vector<double>>(m, "DoubleVector");
 
    py::class_<GeometryConfig>(m, "GeometryConfig")
       .def(py::init<>())
@@ -57,7 +58,11 @@ PYBIND11_MODULE(tree_core, m) {
       .def_readwrite("source", &FieldConfig::source)
       .def_readwrite("grid_type", &FieldConfig::grid_type)
       .def_readwrite("variables", &FieldConfig::variables)
+      .def_readwrite("variable_units", &FieldConfig::variable_units)
+      .def_readwrite("variable_convert", &FieldConfig::variable_convert)
       .def_readwrite("coordinates", &FieldConfig::coordinates)
+      .def_readwrite("coordinate_units", &FieldConfig::coordinate_units)
+      .def_readwrite("coordinate_convert", &FieldConfig::coordinate_convert)
       .def_readwrite("coord_order", &FieldConfig::coord_order)
       .def_readwrite("coordinate_system", &FieldConfig::coordinate_system)
       .def_readwrite("altitude", &FieldConfig::altitude)

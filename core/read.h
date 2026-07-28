@@ -57,6 +57,7 @@ class Read {
    static void loadHDF5Coords(const FieldConfig& field_config, std::vector<std::vector<double>>& coords);
    static int bisection(const std::vector<double>& axis_coords, double query, int index_low = 0, int index_high = -1);
    static int convertIDXFlat(int index0, int index1, int index2, int dim1, int dim2);
+   static void convertUnits(std::vector<double>conversions, std::vector<std::vector<double>>& units);
 
 };
 

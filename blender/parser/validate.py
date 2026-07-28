@@ -2,7 +2,7 @@
 req_attributes = {
     "sphere" : ["radius", "resolution"],
     "stellarator" : ["source"],
-    "field" : ["source", "grid_type", "variables", "coordinates", "coordinate_system"], 
+    "field" : ["source", "grid_type", "variables", "variable_units", "coordinates", "coordinate_units", "coordinate_system"], 
 }
 
 def validate(block, parent = None):
@@ -19,5 +19,3 @@ def validate(block, parent = None):
         for attribute in req_attributes["field"]:
             if attribute not in block.attributes:
                 raise ValueError(f"{attribute} not in attributes of {block.name}")
-
-

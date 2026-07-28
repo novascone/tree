@@ -23,9 +23,9 @@ struct Derivative {
       std::fill(derivative.begin(), derivative.end(), 0.0);
       if (geographic) {
          double R_meters = 6371000;
-         double lat_con = R_meters * PI / 180;
-         double lat = position[0] * PI / 180;
-         double lon_con = R_meters * std::cos(lat) * PI / 180;
+         double lat_con = R_meters;
+         double lat = position[0];
+         double lon_con = R_meters * std::cos(lat);
          for (int i = 0; i < static_cast<int>(arbitrary.size()); i++) { 
             if ( i == 0) derivative[i] = arbitrary[i] / lat_con; 
             if ( i == 1) derivative[i] = arbitrary[i] / lon_con;

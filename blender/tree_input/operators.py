@@ -28,10 +28,10 @@ def register_field_operators():
                 'bl_idname': f'tree.compute_{i}',
                 'execute': vec_comp_execute_factory(i),
             })
-            vol_class = type(f'TREE_OT_volumize_field_{i}', (bpy.types.Operator,), {
-                'bl_label': f'Volumize Field',
-                'bl_idname': f'tree.volumize_field_{i}',
-                'execute': volumetric_visualization_factory(i),
+            vol_class = type(f'TREE_OT_point_cloud_field_{i}', (bpy.types.Operator,), {
+                'bl_label': f'Point Cloud Field',
+                'bl_idname': f'tree.point_cloud_field_{i}',
+                'execute': point_cloud_field_execute_factory(i),
             })
             bpy.utils.register_class(vis_cls)
             bpy.utils.register_class(op_cls)
@@ -58,17 +58,17 @@ def unregister_field_operators():
 def vec_comp_execute_factory(idx): 
     def execute(self, context): 
         props = context.scene.tree_field_props[idx]
-        alt = props.alt_min
+        alt = props.vec_alt_min
         seeds = []
-        if props.seeding_mode == 'FIBONACCI':
+        if props.vec_seeding_mode == 'FIBONACCI':
             fib = fibonacci_sphere(props.seeds_per_level)  
-            while alt <= props.alt_max + 1e-6:
+            while alt <= props.vec_alt_max + 1e-6:
                 for lat, lon in fib:
                     seeds.append([lat, lon, alt])
-                alt += props.alt_step
-        elif props.seeding_mode == 'STRATIFIED':
-            strat = stratified_random(props.lat_cell, props.lon_cell, props.alt_cell, 90, -90, 180, -180,
-                                      props.alt_max, props.alt_min)
+                alt += props.vec_alt_step
+        elif props.vec_seeding_mode == 'STRATIFIED':
+            strat = stratified_random(props.vec_lat_cell, props.vec_lon_cell, props.vec_alt_cell, 90, -90, 180, -180,
+                                      props.vec_alt_max, props.vec_alt_min)
             seeds = strat
         
             #seeds = [[lat, lon, 86.0] for lat in range(0, 31, 6) for lon in range(0, 31, 6)]
@@ -83,11 +83,11 @@ def vec_comp_execute_factory(idx):
 def vec_viz_execute_factory(idx):
     def execute(self, context):
         n = len([c for c in bpy.data.collections if c.name.startswith('run_')])
-        streamline_collection = bpy.data.collections.new(f'vector_run_{n}')
+        streamline_collection = bpy.data.collections.new(f'{interaction.field_names[idx]}_vector_run_{n}')
         bpy.context.scene.collection.children.link(streamline_collection)
-        alt_min = context.scene.tree_field_props[idx].alt_min
-        alt_step = context.scene.tree_field_props[idx].alt_step
-        alt_max = context.scene.tree_field_props[idx].alt_max 
+        alt_min = context.scene.tree_field_props[idx].vec_alt_min
+        alt_step = context.scene.tree_field_props[idx].vec_alt_step
+        alt_max = context.scene.tree_field_props[idx].vec_alt_max 
         alts = [alt_min] 
         while alts[-1] + alt_step <= alt_max + 1e-6:
             alts.append(alts[-1] + alt_step)
@@ -158,14 +158,14 @@ def vec_viz_execute_factory(idx):
         return {'FINISHED'}
     return execute
 
-def vis_vec_as_sca_execute_factory(idx):
+def point_cloud_field_execute_factory(idx):
     def execute(self, context):
         n = len([c for c in bpy.data.collections if c.name.startswith('run_')]) 
         props = context.scene.tree_field_props[idx]
         point_radius = context.scene.tree_field_props[idx].point_radius 
 
-        seeds = stratified_random(props.lat_cell, props.lon_cell, props.alt_cell, 90, -90, 180, -180,
-                                  props.alt_max, props.alt_min)
+        seeds = stratified_random(props.sca_lat_cell, props.sca_lon_cell, props.sca_alt_cell, 90, -90, 180, -180,
+                                  props.sca_alt_max, props.sca_alt_min)
 
         positions = np.array(seeds)
         positions[:, 1] = positions[:, 1] % 360 # NAVGEM 
@@ -182,7 +182,7 @@ def vis_vec_as_sca_execute_factory(idx):
             return {'CANCELLED'}
 
         mat = sca_mat_nodes(context, idx)
-        sca_viz_collection = bpy.data.collections.new(f'sca_viz_run_{n}')
+        sca_viz_collection = bpy.data.collections.new(f'{interaction.field_names[idx]}_scalar_run_{n}')
         bpy.context.scene.collection.children.link(sca_viz_collection) 
         
 
@@ -448,7 +448,7 @@ def sca_viz_execute_factory(idx):
     def execute(self, context):
         n = len([c for c in bpy.data.collections if c.name.startswith('run_')])  
         mat = sca_mat_nodes(context, idx)
-        scalar_collection = bpy.data.collections.new(f'scalar_run_{n}')
+        scalar_collection = bpy.data.collections.new(f'{interaction.field_names[idx]}_scalar_run_{n}')
         bpy.context.scene.collection.children.link(scalar_collection)
         vals = np.array(interaction.read[idx].values[0])
         props = context.scene.tree_field_props[idx]
@@ -499,7 +499,7 @@ def sca_viz_execute_factory(idx):
 
 def gen_field_lines_viz(context, idx):
     n = len([c for c in bpy.data.collections if c.name.startswith('run_')])
-    streamline_collection = bpy.data.collections.new(f'run_{n}')
+    streamline_collection = bpy.data.collections.new(f'{interaction.field_names[idx]}_run_{n}')
     bpy.context.scene.collection.children.link(streamline_collection)
     t_mat = 0.0
     t_points = 0.0 

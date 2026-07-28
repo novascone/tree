@@ -80,6 +80,9 @@ void Read::loadNetCDFValues(const FieldConfig& field_config, const std::vector<s
       for (const std::string& name : field_config.variables.value()) {  
          values.push_back(readNetCDFVariable(netcdf_file.file_id, name));
       }
+      if (field_config.variable_convert.has_value()) {
+         convertUnits(field_config.variable_convert.value(), values);
+      }
    if (field_config.coord_order.has_value()) {
       Read::reorder_values(field_config, coords, values);
    }
@@ -94,6 +97,9 @@ void Read::loadNetCDFCoords(const FieldConfig& field_config, std::vector<std::ve
       for (const std::string& name : field_config.coordinates.value()) {
          coords.push_back(readNetCDFVariable(netcdf_file.file_id, name)); 
       }
+      if (field_config.coordinate_convert.has_value()) {
+         convertUnits(field_config.coordinate_convert.value(), coords);
+         }
    if (field_config.coord_order.has_value()) {
       Read::reorder_coords(field_config, coords) ;
    }
@@ -106,6 +112,9 @@ void Read::loadHDF5Values(const FieldConfig &field_config, const std::vector<std
       for (const std::string& name : field_config.variables.value()) {
          values.push_back(readHDF5Variable(hdf5_file.file_id, name));
       }
+      if (field_config.variable_convert.has_value()) {
+         convertUnits(field_config.variable_convert.value(), values);
+         }
    }
    if (field_config.coord_order.has_value()) {
       Read::reorder_values(field_config, coords, values);
@@ -116,8 +125,11 @@ void Read::loadHDF5Coords(const FieldConfig &field_config, std::vector<std::vect
    HDF5File hdf5_file(field_config.source);
    if (field_config.coordinates.has_value()) {
       for (const std::string& name : field_config.coordinates.value()) {
-         coords.push_back(readHDF5Variable(hdf5_file.file_id, name));
+         coords.push_back(readHDF5Variable(hdf5_file.file_id, name)); 
       }
+      if (field_config.coordinate_convert.has_value()) {
+         convertUnits(field_config.coordinate_convert.value(), coords);
+         }
    if (field_config.coord_order.has_value()) {
       Read::reorder_coords(field_config, coords) ;
    }
@@ -254,6 +266,14 @@ int Read::bisection(const std::vector<double>& axis_line, double query, int inde
 
 int Read::convertIDXFlat(int index0, int index1, int index2, int dim1, int dim2) { 
    return index0 * (dim1 * dim2) + index1 * dim2 + index2;
+}
+
+void Read::convertUnits(std::vector<double> conversions, std::vector<std::vector<double>>& units) {
+   for (int i = 0; i < static_cast<int>(units.size()); i ++){
+      for (int j = 0; j < static_cast<int>(units[i].size()); j++){
+         units[i][j] *= conversions[i];
+      }
+   }
 }
 
 

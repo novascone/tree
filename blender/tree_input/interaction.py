@@ -76,48 +76,74 @@ def draw_factory(idx):
         props = context.scene.tree_field_props[idx]
         layout = self.layout
         if tree_config.fields[idx].grid_type == "structured" or tree_config.fields[idx].type == "vector":
-            seed_box = layout.box()
-            seed_row = seed_box.row()
-            seed_row.prop(props, "show_seeds", icon='TRIA_DOWN' if props.show_seeds else 'TRIA_RIGHT', emboss=False)
-            if props.show_seeds:
-               seed_box.prop(props, "seeding_mode")
-               seed_box.prop(props, "alt_min")
-               seed_box.prop(props, "alt_max") 
-               if props.seeding_mode == 'FIBONACCI':
-                    seed_box.prop(props, "seeds_per_level")
-                    seed_box.prop(props, "alt_step")
-               elif props.seeding_mode == 'STRATIFIED':
-                    seed_box.prop(props, "lat_cell")
-                    seed_box.prop(props, "lon_cell")
-                    seed_box.prop(props, "alt_cell")
+            seeds_head, seeds_body = layout.panel(f"seeds_{idx}", default_closed=True)
+            seeds_head.label(text="Seeds")
+            if seeds_body:
+                vector_seeds_head, vector_seeds_body = seeds_body.panel(f"vector_seeds_{idx}", default_closed=True)
+                vector_seeds_head.label(text="Vector Seeds")
+                scalar_seeds_head, scalar_seeds_body = seeds_body.panel(f"scalar_seeds_{idx}", default_closed=True)
+                scalar_seeds_head.label(text="Scalar Seeds")
+                if vector_seeds_body:
+                    vector_seeds_body.prop(props, "vec_seeding_mode")
+                    vector_seeds_body.prop(props, "vec_alt_min")
+                    vector_seeds_body.prop(props, "vec_alt_max") 
+                    if props.vec_seeding_mode == 'FIBONACCI':
+                        vector_seeds_body.prop(props, "seeds_per_level")
+                        vector_seeds_body.prop(props, "vec_alt_step")
+                    elif props.vec_seeding_mode == 'STRATIFIED':
+                        vector_seeds_body.prop(props, "vec_lat_cell")
+                        vector_seeds_body.prop(props, "vec_lon_cell")
+                        vector_seeds_body.prop(props, "vec_alt_cell")
+                if scalar_seeds_body:
+                    scalar_seeds_body.prop(props, "sca_seeding_mode")
+                    scalar_seeds_body.prop(props, "sca_alt_min")
+                    scalar_seeds_body.prop(props, "sca_alt_max") 
+                    if props.sca_seeding_mode == 'FIBONACCI':
+                        scalar_seeds_body.prop(props, "seeds_per_level")
+                        scalar_seeds_body.prop(props, "sca_alt_step")
+                    elif props.sca_seeding_mode == 'STRATIFIED':
+                        scalar_seeds_body.prop(props, "sca_lat_cell")
+                        scalar_seeds_body.prop(props, "sca_lon_cell")
+                        scalar_seeds_body.prop(props, "sca_alt_cell")
         if tree_config.fields[idx].type == "vector":
-            stream_box = layout.box()
-            stream_row = stream_box.row()
-            stream_row.prop(props, "show_viz", icon='TRIA_DOWN' if props.show_viz else 'TRIA_RIGHT', emboss=False)
-            if props.show_viz:
-                stream_box.prop(props, "interval_start")
-                stream_box.prop(props, "interval_end")
-                stream_box.prop(props, "step_size")
-                stream_box.prop(props, "color_mode")
-                stream_box.prop(props, "anim_speed")
-                stream_box.prop(props, "spot_width")
-                stream_box.prop(props, "spot_strength")
-                stream_box.prop(props, "threshold")
-                stream_box.prop(props, "alt_min_val")
-                stream_box.prop(props, "alt_max_val")
-                stream_box.prop(props, "point_radius")
-                stream_box.operator(f'tree.compute_{idx}')
-                stream_box.operator(f'tree.visualize_vector_{idx}')
-                stream_box.operator(f'tree.volumize_field_{idx}')
+            vector_viz_head, vector_viz_body = layout.panel(f"viz_{idx}", default_closed=True)
+            vector_viz_head.label(text="Vector Visualiation")
+            if vector_viz_body:
+                streamline_head, streamline_body = vector_viz_body.panel(f"streamline_{idx}", default_closed=True)
+                streamline_head.label(text="Streamline")
+                if streamline_body:
+                    compute_head, compute_body = streamline_body.panel(f"compute_{idx}", default_closed=True)
+                    compute_head.label(text="Compute")
+                    if compute_body:
+                        compute_body.prop(props, "interval_start")
+                        compute_body.prop(props, "interval_end")
+                        compute_body.prop(props, "step_size")
+                        compute_body.operator(f'tree.compute_{idx}')
+                    visualize_head, visualize_body = streamline_body.panel(f"visualize_{idx}", default_closed=True)
+                    visualize_head.label(text="Visualize")
+                    if visualize_body:
+                        visualize_body.prop(props, "color_mode")
+                        visualize_body.prop(props, "anim_speed")
+                        visualize_body.prop(props, "spot_width")
+                        visualize_body.prop(props, "spot_strength") 
+                        visualize_body.operator(f'tree.visualize_vector_{idx}')
+                scalar_head, scalar_body = vector_viz_body.panel(f"scalar_{idx}", default_closed=True)
+                scalar_head.label(text="Scalar")
+                if scalar_body:
+                    scalar_body.prop(props, "threshold") 
+                    scalar_body.prop(props, "point_radius")
+                    scalar_body.operator(f'tree.point_cloud_field_{idx}')
         elif tree_config.fields[idx].type == "scalar":
-            scalar_box = layout.box()
-            scalar_box.prop(props, "opacity")
-            scalar_box.prop(props, "strength")
-            scalar_box.prop(props, "point_radius")
-            scalar_box.prop(props, "displacement")
-            if props.displacement:
-                scalar_box.prop(props, "displacement_scale")
-            scalar_box.operator(f'tree.visualize_scalar_{idx}')
+            scalar_viz_head, scalar_viz_body = layout.panel(f"sca_{idx}", default_closed=True)
+            scalar_viz_head.label(text="Scalar Visualiation")
+            if scalar_viz_body:
+                scalar_viz_body.prop(props, "opacity")
+                scalar_viz_body.prop(props, "strength")
+                scalar_viz_body.prop(props, "point_radius")
+                scalar_viz_body.prop(props, "displacement")
+                if props.displacement:
+                    scalar_viz_body.prop(props, "displacement_scale")
+                scalar_viz_body.operator(f'tree.visualize_scalar_{idx}')
 
     return draw
 
@@ -166,7 +192,15 @@ class FieldProperties(bpy.types.PropertyGroup):
         ],
         default='BLUE_RED'
     )
-    seeding_mode: EnumProperty(
+    vec_seeding_mode: EnumProperty(
+            name="Seeding Mode",
+            items=[
+                ('FIBONACCI', "Fibonacci Sphere", ""),
+                ('STRATIFIED', "Stratified Random", ""),
+            ],
+            default='FIBONACCI'
+        )
+    sca_seeding_mode: EnumProperty(
             name="Seeding Mode",
             items=[
                 ('FIBONACCI', "Fibonacci Sphere", ""),
@@ -176,12 +210,18 @@ class FieldProperties(bpy.types.PropertyGroup):
         )
     seeds_per_level: IntProperty(name="Seeds Per Level", default=50, min=1)
     coordinate_system: StringProperty(name="Coordinate System")
-    alt_min: FloatProperty(name="Alt Min ", default=12000.0)
-    alt_max: FloatProperty(name="Alt Max ", default=12000.0)
-    alt_step: FloatProperty(name="Alt Step ", default=1.0, min=0.1)
-    lat_cell: FloatProperty(name="Lat Cell (deg)", default=1.0, min=0.1)
-    lon_cell: FloatProperty(name="Lon Cell (deg)", default=1.0, min=0.1)
-    alt_cell: FloatProperty(name="Alt Cell ", default=1.0, min=0.1)
+    vec_alt_min: FloatProperty(name="Alt Min ", default=12000.0)
+    sca_alt_min: FloatProperty(name="Alt Min ", default=12000.0)
+    vec_alt_max: FloatProperty(name="Alt Max ", default=12000.0)
+    sca_alt_max: FloatProperty(name="Alt Max ", default=12000.0)
+    vec_alt_step: FloatProperty(name="Alt Step ", default=1.0, min=0.1)
+    sca_alt_step: FloatProperty(name="Alt Step ", default=1.0, min=0.1)
+    vec_lat_cell: FloatProperty(name="Lat Cell (deg)", default=1.0, min=0.1)
+    sca_lat_cell: FloatProperty(name="Lat Cell (deg)", default=1.0, min=0.1)
+    vec_lon_cell: FloatProperty(name="Lon Cell (deg)", default=1.0, min=0.1)
+    sca_lon_cell: FloatProperty(name="Lon Cell (deg)", default=1.0, min=0.1)
+    vec_alt_cell: FloatProperty(name="Alt Cell ", default=1.0, min=0.1)
+    sca_alt_cell: FloatProperty(name="Alt Cell ", default=1.0, min=0.1)
     opacity: FloatProperty(name="Opacity", default=0.05)
     strength: FloatProperty(name="Strength", default=0.3)
     point_radius: FloatProperty(name="Point Radius (m)", default=0.001)

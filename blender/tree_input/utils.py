@@ -45,14 +45,12 @@ def stratified_random(lat_cell, lon_cell, alt_cell, lat_max, lat_min, lon_max, l
     return seeds
 
 
-def convert_to_cart(lats, lons, alts):
-    lat_r = np.radians(lats)
-    lon_r = np.radians(lons)
+def convert_to_cart(lats, lons, alts): 
     R = 6371000.0
     r = (R + alts) / R
-    x = r * np.cos(lat_r) * np.cos(lon_r)
-    y = r * np.cos(lat_r) * np.sin(lon_r)
-    z = r * np.sin(lat_r)
+    x = r * np.cos(lats) * np.cos(lons)
+    y = r * np.cos(lats) * np.sin(lons)
+    z = r * np.sin(lats)
 
     return x, y, z
 

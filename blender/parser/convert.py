@@ -17,7 +17,9 @@ class FieldConfig:
     source:str
     grid_type:str 
     variables:str | None
+    variable_units:str | None
     coordinates:str | None 
+    coordinate_units:str | None
     coordinate_system:str | None
     coord_order:str | None
     altitude:float | None
@@ -29,7 +31,9 @@ class FieldConfig:
         self.source = None
         self.grid_type = None 
         self.variables = None
+        self.variable_units = None
         self.coordinates = None
+        self.coordinate_units = None
         self.coordinate_system = None
         self.coord_order = None
         self.altitude = None

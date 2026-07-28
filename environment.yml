@@ -7,3 +7,4 @@ dependencies:
   - cmake
   - hdf5
   - netcdf4
+  - pint
