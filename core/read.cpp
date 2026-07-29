@@ -132,7 +132,7 @@ void Read::loadHDF5Coords(const FieldConfig &field_config, std::vector<std::vect
          }
    if (field_config.coord_order.has_value()) {
       Read::reorder_coords(field_config, coords) ;
-   }
+      }
    }
 }
 

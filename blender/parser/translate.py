@@ -23,25 +23,27 @@ def translate(TREE_input) -> tree_core.TREEConfig:
             variables = field.variables.split(" ")
             for var in variables:
                 fieldBind.variables.append(var) 
-        fieldBind.variable_units = tree_core.StringVector()
-        fieldBind.variable_convert = tree_core.DoubleVector()
+        fieldBind.variable_units = tree_core.StringVector() 
         if field.variable_units:
+            c_variable_convert = [] 
             variable_units = field.variable_units.split(" ")
             for variable_unit in variable_units:
                 fieldBind.variable_units.append(variable_unit)
-                fieldBind.variable_convert.append(pint.Quantity(1, variable_unit).to_base_units().magnitude)
+                c_variable_convert.append(pint.Quantity(1, variable_unit).to_base_units().magnitude)
+            fieldBind.variable_convert = c_variable_convert
         fieldBind.coordinates = tree_core.StringVector()
         if field.coordinates: 
             coordinates = field.coordinates.split(" ")
             for coord in coordinates:
                 fieldBind.coordinates.append(coord)
-        fieldBind.coordinate_units = tree_core.StringVector()
-        fieldBind.coordinate_convert = tree_core.DoubleVector()
-        if field.coordinate_units:
+        fieldBind.coordinate_units = tree_core.StringVector() 
+        if field.coordinate_units:  
             coordinate_units = field.coordinate_units.split(" ")
+            c_coordinate_convert = []
             for coord_unit in coordinate_units:
                 fieldBind.coordinate_units.append(coord_unit)
-                fieldBind.coordinate_convert.append(pint.Quantity(1, coord_unit).to_base_units().magnitude)
+                c_coordinate_convert.append(pint.Quantity(1, coord_unit).to_base_units().magnitude) 
+            fieldBind.coordinate_convert = c_coordinate_convert
         if field.coord_order:
             fieldBind.coord_order = tree_core.StringVector()
             coord_order = field.coord_order.split(" ")

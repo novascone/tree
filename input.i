@@ -20,7 +20,9 @@
    source = ~/navgem-data/navgem_reanalysis_X0360Y0180ZL111_slfull_uniform_2024052600_000004.h5
    grid_type = structured
    variables = /Meteorology/zonal_wind /Meteorology/meridional_wind
+   variable_units = m/s m/s
    coordinates = /Geometry/Geometric_height_levels /Geometry/Latitudes_1d /Geometry/Longitudes_1d 
+   coordinate_units = m degree degree
    coord_order = alt lat lon
    coordinate_system = geographic
    sentinel = -99999.0

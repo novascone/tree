@@ -97,9 +97,13 @@ def traverse(TREE_Config, valid_tree, parent = None) -> TREEConfig:
             field.type = cast(valid_tree.attributes["type"])
             field.grid_type = cast(valid_tree.attributes["grid_type"])
             field.source = cast(valid_tree.attributes["source"]) 
-            field.coordinate_system = cast(valid_tree.attributes["coordinate_system"]) 
+            field.coordinate_system = cast(valid_tree.attributes["coordinate_system"])
             field.variables = cast(valid_tree.attributes["variables"])
+            if "variable_units" in valid_tree.attributes:
+                field.variable_units = cast(valid_tree.attributes["variable_units"])
             field.coordinates = cast(valid_tree.attributes["coordinates"])
+            if "coordinate_units" in valid_tree.attributes:
+                field.coordinate_units = cast(valid_tree.attributes["coordinate_units"])
             if "coord_order" in valid_tree.attributes:
                 field.coord_order = cast(valid_tree.attributes["coord_order"])
             if "sentinel" in valid_tree.attributes:

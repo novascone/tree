@@ -72,6 +72,8 @@ def vec_comp_execute_factory(idx):
             seeds = strat
         
             #seeds = [[lat, lon, 86.0] for lat in range(0, 31, 6) for lon in range(0, 31, 6)]
+        seeds = np.asarray(seeds)
+        seeds[:, :2] = np.radians(seeds[:, :2]) 
         t0 = time.perf_counter()
         interaction.streamlines[idx] = tree_core.driveField(interaction.read[idx], seeds, props.interval_start, props.interval_end, props.step_size)
         t1 = time.perf_counter()

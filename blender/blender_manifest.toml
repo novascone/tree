@@ -11,4 +11,11 @@ type = "add-on"
 
 blender_version_min = "4.2.0"
 
+wheels = [
+   "./wheels/pint-0.25.3-py3-none-any.whl",
+   "./wheels/flexcache-0.3-py3-none-any.whl",
+   "./wheels/flexparser-0.4-py3-none-any.whl",
+   "./wheels/platformdirs-4.11.0-py3-none-any.whl", 
+]
+
 license = [ "SPDX:GPL-3.0-or-later" ]

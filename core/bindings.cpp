@@ -19,8 +19,7 @@ PYBIND11_MODULE(tree_core, m) {
    m.def("driveField", &driveField); 
  
    py::bind_vector<std::vector<FieldConfig>>(m, "FieldConfigList");
-   py::bind_vector<std::vector<std::string>>(m, "StringVector"); 
-   py::bind_vector<std::vector<double>>(m, "DoubleVector");
+   py::bind_vector<std::vector<std::string>>(m, "StringVector");  
 
    py::class_<GeometryConfig>(m, "GeometryConfig")
       .def(py::init<>())
