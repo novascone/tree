@@ -18,6 +18,7 @@ class FieldConfig:
     grid_type:str 
     variables:str | None
     variable_units:str | None
+    variable_directions:str | None
     coordinates:str | None 
     coordinate_units:str | None
     coordinate_system:str | None
@@ -32,6 +33,7 @@ class FieldConfig:
         self.grid_type = None 
         self.variables = None
         self.variable_units = None
+        self.variable_directions = None
         self.coordinates = None
         self.coordinate_units = None
         self.coordinate_system = None
@@ -101,6 +103,8 @@ def traverse(TREE_Config, valid_tree, parent = None) -> TREEConfig:
             field.variables = cast(valid_tree.attributes["variables"])
             if "variable_units" in valid_tree.attributes:
                 field.variable_units = cast(valid_tree.attributes["variable_units"])
+            if "variable_directions" in valid_tree.attributes:
+                field.variable_directions = cast(valid_tree.attributes["variable_directions"])
             field.coordinates = cast(valid_tree.attributes["coordinates"])
             if "coordinate_units" in valid_tree.attributes:
                 field.coordinate_units = cast(valid_tree.attributes["coordinate_units"])

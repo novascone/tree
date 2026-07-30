@@ -27,6 +27,7 @@ struct FieldConfig {
    std::string coordinate_system;
    std::optional<std::vector<std::string>> variables;
    std::optional<std::vector<std::string>> variable_units;
+   std::optional<std::vector<std::string>> variable_directions;
    std::optional<std::vector<double>> variable_convert;
    std::optional<std::vector<std::string>> coordinates;
    std::optional<std::vector<std::string>> coordinate_units;

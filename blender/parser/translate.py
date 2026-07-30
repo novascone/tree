@@ -31,6 +31,11 @@ def translate(TREE_input) -> tree_core.TREEConfig:
                 fieldBind.variable_units.append(variable_unit)
                 c_variable_convert.append(pint.Quantity(1, variable_unit).to_base_units().magnitude)
             fieldBind.variable_convert = c_variable_convert
+        fieldBind.variable_directions = tree_core.StringVector()
+        if field.variable_directions:
+            variable_dirs = field.variable_directions.split(" ")
+            for direction in variable_dirs:
+                fieldBind.variable_directions.append(direction)
         fieldBind.coordinates = tree_core.StringVector()
         if field.coordinates: 
             coordinates = field.coordinates.split(" ")

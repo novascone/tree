@@ -58,6 +58,7 @@ PYBIND11_MODULE(tree_core, m) {
       .def_readwrite("grid_type", &FieldConfig::grid_type)
       .def_readwrite("variables", &FieldConfig::variables)
       .def_readwrite("variable_units", &FieldConfig::variable_units)
+      .def_readwrite("variable_directions", &FieldConfig::variable_directions)
       .def_readwrite("variable_convert", &FieldConfig::variable_convert)
       .def_readwrite("coordinates", &FieldConfig::coordinates)
       .def_readwrite("coordinate_units", &FieldConfig::coordinate_units)
