@@ -34,7 +34,7 @@ StreamlineSet driveField(Read& loaded_data, std::vector<std::vector<double>>& se
    #pragma omp parallel for 
    for (int i = 0; i < static_cast<int>(seeds.size()); i++) {
       TriInterp triInterp(loaded_data); 
-      Derivative derivative(triInterp, true); 
+      Derivative derivative(triInterp, loaded_data.variable_directions); 
 
       try {
          Output out(0); 

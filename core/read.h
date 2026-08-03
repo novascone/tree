@@ -26,7 +26,7 @@ struct Neighbor {
 
    public:
    const std::array<double, 3> coords;
-   const std::vector<double> values; 
+   const std::vector<double> values;
 
    Neighbor(std::array<double, 3> coords_p, std::vector<double> values_p) : coords(coords_p), values(values_p) {} ;
 
@@ -41,6 +41,7 @@ class Read {
    public:
    const std::vector<std::vector<double>> coords;
    const std::vector<std::vector<double>> values;
+   const std::optional<std::vector<std::string>> variable_directions;
    const std::optional<double> sentinel;
    Read();
    Read(std::vector<std::vector<double>> coords, std::vector<std::vector<double>> values);
