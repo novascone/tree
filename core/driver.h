@@ -32,14 +32,14 @@ struct Derivative {
       signs.resize(axis_names.size());
       std::fill(perm.begin(), perm.end(), -1);
 
-      for (int i = 0; i < (*variable_directions).size(); i++) {
+      for (int i = 0; i < static_cast<int>((*variable_directions).size()); i++) {
          sign_chars[i] = ((*variable_directions)[i][0]);
          axis_names[i] = ((*variable_directions)[i].substr(1));
          signs[i] = ((sign_chars[i] == '-') ? -1.0 : 1.0);
       }
           
       for (int i = 0; i < 3; i++) {
-         for (int j = 0; j < (*variable_directions).size(); j++) {
+         for (int j = 0; j < static_cast<int>((*variable_directions).size()); j++) {
             if (standard[i] == axis_names[j])
                perm[i] = j;
          }

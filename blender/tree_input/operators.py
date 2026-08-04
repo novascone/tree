@@ -171,6 +171,7 @@ def point_cloud_field_execute_factory(idx):
 
         positions = np.array(seeds)
         positions[:, 1] = positions[:, 1] % 360 # NAVGEM 
+        positions[:, :2] = np.radians(positions[:, :2])
         vals = get_speeds(positions, idx)
 
         mask = vals >= props.threshold
