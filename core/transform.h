@@ -1,0 +1,20 @@
+
+#ifndef TRANSFORM_H
+#define TRANSFORM_H
+
+#include <array>
+#include <cmath> 
+
+template <typename CoordSystem>
+struct Transform;
+
+struct Geographic {};
+
+template <>
+struct Transform<Geographic> {
+   static constexpr double R_meters = 6371000;
+   static std::array<double,3> to_cart(double lat, double lon, double alt);
+   static std::array<double,3> from_cart(double x, double y, double z);
+};
+
+#endif
