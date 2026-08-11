@@ -42,6 +42,8 @@ class Read {
    const std::vector<std::vector<double>> coords;
    const std::vector<std::vector<double>> values;
    const std::optional<std::vector<std::string>> variable_directions;
+   const std::string coordinate_system;
+   const std::optional<std::string> vector_convention;
    const std::optional<double> sentinel;
    Read();
    Read(std::vector<std::vector<double>> coords, std::vector<std::vector<double>> values);

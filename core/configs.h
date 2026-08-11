@@ -25,6 +25,7 @@ struct FieldConfig {
    std::string source;
    std::string grid_type;
    std::string coordinate_system;
+   std::optional<std::string> vector_convention;
    std::optional<std::vector<std::string>> variables;
    std::optional<std::vector<std::string>> variable_units;
    std::optional<std::vector<std::string>> variable_directions;

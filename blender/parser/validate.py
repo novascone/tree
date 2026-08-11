@@ -3,7 +3,7 @@ req_attributes = {
     "sphere" : ["radius", "resolution"],
     "stellarator" : ["source"],
     "field" : ["source", "type", "grid_type", "variables",  "coordinates", "coordinate_system"],
-    "vector" : ["variable_directions"],  
+    "vector" : ["vector_convention", "variable_directions"],  
 }
 
 def validate(block, parent = None):

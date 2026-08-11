@@ -14,7 +14,8 @@
      variables = u_mer u_zon
      variable_directions = +lat +lon
      coordinates = lat lon alt
-     coordinate_system = geographic 
+     coordinate_system = geographic
+     vector_convention = ENU
   []
   [NAVGEM]
    type = vector
@@ -27,6 +28,7 @@
    coordinate_units = m degree degree
    coord_order = alt lat lon
    coordinate_system = geographic
+   vector_convention = ENU
    sentinel = -99999.0
   []
   [AWE]

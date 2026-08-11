@@ -24,3 +24,29 @@ std::array<double,3> Transform<Geographic>::from_cart(double x, double y, double
 
    return lla;
 }
+
+std::array<std::array<double,3>,3> Basis<ENU>::local_basis(double x, double y, double z) {
+
+   std::array<std::array<double,3>,3> basis {};
+   std::array<double,3> up {};
+   std::array<double,3> east {};
+   std::array<double,3> north {};
+
+
+   double mag = sqrt(x*x + y*y + z*z);
+   x = x/mag;
+   y = y/mag;
+   z = z/mag;
+   
+   up = {x, y, z};
+
+   double east_mag = sqrt(x*x + y*y);
+   east = {-y/east_mag, x/east_mag, 0};
+   
+   north = {-(x*z)/east_mag, -(y*z)/east_mag, (x*x + y*y)/east_mag};
+
+   basis = {north, east, up};
+   
+   return basis;
+
+}

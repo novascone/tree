@@ -13,10 +13,24 @@ namespace py = pybind11;
 PYBIND11_MAKE_OPAQUE(std::vector<FieldConfig>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::string>);
 
+StreamlineSet driveFieldSwitch(Read &loaded_data, std::vector<std::vector<double>> &seeds, double interval_start, double interval_end, double initial_step_size) {
+   if (loaded_data.coordinate_system == "geographic") {
+      if (loaded_data.vector_convention.value() == "enu") {
+         return driveField<Geographic, ENU>(loaded_data, seeds, interval_start, interval_end, initial_step_size);
+      }
+      else {
+         throw std::runtime_error("Unrecognized vector convention");
+      }
+   }
+   else {
+         throw std::runtime_error("Unrecognized coordinate system");
+      }
+}
+
 PYBIND11_MODULE(tree_core, m) {
    m.doc() = "TREE core module";
    m.def("build_mesh", &buildMesh); 
-   m.def("driveField", &driveField); 
+   m.def("driveField", &driveFieldSwitch); 
  
    py::bind_vector<std::vector<FieldConfig>>(m, "FieldConfigList");
    py::bind_vector<std::vector<std::string>>(m, "StringVector");  
@@ -65,6 +79,7 @@ PYBIND11_MODULE(tree_core, m) {
       .def_readwrite("coordinate_convert", &FieldConfig::coordinate_convert)
       .def_readwrite("coord_order", &FieldConfig::coord_order)
       .def_readwrite("coordinate_system", &FieldConfig::coordinate_system)
+      .def_readwrite("vector_convention", &FieldConfig::vector_convention)
       .def_readwrite("altitude", &FieldConfig::altitude)
       .def_readwrite("sentinel", &FieldConfig::sentinel);
     

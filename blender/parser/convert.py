@@ -22,6 +22,7 @@ class FieldConfig:
     coordinates:str | None 
     coordinate_units:str | None
     coordinate_system:str | None
+    vector_convention:str | None
     coord_order:str | None
     altitude:float | None
     sentinel:float | None
@@ -37,6 +38,7 @@ class FieldConfig:
         self.coordinates = None
         self.coordinate_units = None
         self.coordinate_system = None
+        self.vector_convention = None
         self.coord_order = None
         self.altitude = None
         self.sentinel = None
@@ -101,6 +103,8 @@ def traverse(TREE_Config, valid_tree, parent = None) -> TREEConfig:
             field.source = cast(valid_tree.attributes["source"]) 
             field.coordinate_system = cast(valid_tree.attributes["coordinate_system"])
             field.variables = cast(valid_tree.attributes["variables"])
+            if "vector_convention" in valid_tree.attributes:
+                field.vector_convention = cast(valid_tree.attributes["vector_convention"])
             if "variable_units" in valid_tree.attributes:
                 field.variable_units = cast(valid_tree.attributes["variable_units"])
             if "variable_directions" in valid_tree.attributes:

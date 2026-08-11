@@ -17,7 +17,9 @@ def translate(TREE_input) -> tree_core.TREEConfig:
         fieldBind.type = field.type
         fieldBind.source = os.path.expanduser(field.source)
         fieldBind.grid_type = field.grid_type
-        fieldBind.coordinate_system = field.coordinate_system  
+        fieldBind.coordinate_system = field.coordinate_system
+        if field.vector_convention:
+            fieldBind.vector_convention = field.vector_convention
         fieldBind.variables = tree_core.StringVector() 
         if field.variables:
             variables = field.variables.split(" ")
