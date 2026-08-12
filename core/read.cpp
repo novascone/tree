@@ -41,8 +41,8 @@ Read::Read(){}
 Read::Read(std::vector<std::vector<double>> coords_p, std::vector<std::vector<double>> values_p): coords(coords_p), values(values_p) {}
 
 Read::Read(const FieldConfig& field_config_p):  coords(loadCoords(field_config_p)), values(loadValues(field_config_p, coords)),
-           variable_directions(field_config_p.variable_directions), coordinate_system(field_config_p.coordinate_system), vector_convention(field_config_p.vector_convention),
-           sentinel(field_config_p.sentinel) {}
+           variable_directions(field_config_p.variable_directions), coordinate_system(field_config_p.coordinate_system), periodic(field_config_p.periodic), 
+           vector_convention(field_config_p.vector_convention), sentinel(field_config_p.sentinel) {}
 
 std::vector<std::vector<double>> Read::loadCoords(const FieldConfig& field_config_p) {
    std::filesystem::path p(field_config_p.source); 

@@ -56,6 +56,11 @@ def translate(TREE_input) -> tree_core.TREEConfig:
             coord_order = field.coord_order.split(" ")
             for place in coord_order:
                 fieldBind.coord_order.append(place)
+        fieldBind.periodic = tree_core.StringVector()
+        if field.periodic:
+            periodic_axes = field.periodic.split(" ")
+            for periodic_axis in periodic_axes:
+                fieldBind.periodic.append(periodic_axis)
         if field.sentinel is not None:
             fieldBind.sentinel = field.sentinel
         if field.type == "scalar": 

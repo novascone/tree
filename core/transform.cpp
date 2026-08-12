@@ -1,6 +1,8 @@
 
 #include "transform.h"
 
+const std::array<std::string, 3> Transform<Geographic>::axis_names = {"lat", "lon", "alt"};
+
 std::array<double,3> Transform<Geographic>::to_cart(double lat, double lon, double alt) {
 
    double r = R_meters + alt;

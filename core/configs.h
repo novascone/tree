@@ -34,6 +34,7 @@ struct FieldConfig {
    std::optional<std::vector<std::string>> coordinate_units;
    std::optional<std::vector<double>> coordinate_convert;
    std::optional<std::vector<std::string>> coord_order;
+   std::optional<std::vector<std::string>> periodic;
    std::optional<double> altitude;
    std::optional<double> sentinel;
 };

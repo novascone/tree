@@ -22,6 +22,7 @@ class FieldConfig:
     coordinates:str | None 
     coordinate_units:str | None
     coordinate_system:str | None
+    periodic:str | None
     vector_convention:str | None
     coord_order:str | None
     altitude:float | None
@@ -38,6 +39,7 @@ class FieldConfig:
         self.coordinates = None
         self.coordinate_units = None
         self.coordinate_system = None
+        self.periodic = None
         self.vector_convention = None
         self.coord_order = None
         self.altitude = None
@@ -114,6 +116,8 @@ def traverse(TREE_Config, valid_tree, parent = None) -> TREEConfig:
                 field.coordinate_units = cast(valid_tree.attributes["coordinate_units"])
             if "coord_order" in valid_tree.attributes:
                 field.coord_order = cast(valid_tree.attributes["coord_order"])
+            if "periodic" in valid_tree.attributes:
+                field.periodic = cast(valid_tree.attributes["periodic"])
             if "sentinel" in valid_tree.attributes:
                 field.sentinel = cast(valid_tree.attributes["sentinel"])
             if valid_tree.attributes["type"] == "scalar":

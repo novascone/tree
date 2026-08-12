@@ -2,10 +2,35 @@
 #include "interp.h"
 #include <stdexcept>
 
-TriInterp::TriInterp(Read& data) : loaded_data(data), saved_index{}, correlated{} {
+TriInterp::TriInterp(Read& data, std::array<bool, 3> periodic_p) : loaded_data(data), periodic(periodic_p), saved_index{}, correlated{} {
 
-for (int i = 0; i < 3; i++) {
-   hunt_threshold[i] = std::min(1, static_cast<int>(std::pow(static_cast<double>(loaded_data.coords[i].size()), 0.25)));
+   double lower_bound_0 = std::min(loaded_data.coords[0].front(), loaded_data.coords[0].back());
+   double upper_bound_0 = std::max(loaded_data.coords[0].front(), loaded_data.coords[0].back());
+   double span_0 = std::abs(loaded_data.coords[0].back() - loaded_data.coords[0].front());
+   double cell_width_0 = span_0 / (loaded_data.coords[0].size() - 1);
+   double period_0 = span_0 + cell_width_0;
+   
+   double lower_bound_1 = std::min(loaded_data.coords[1].front(), loaded_data.coords[1].back());
+   double upper_bound_1 = std::max(loaded_data.coords[1].front(), loaded_data.coords[1].back());
+   double span_1 = std::abs(loaded_data.coords[1].back() - loaded_data.coords[1].front());
+   double cell_width_1 = span_1 / (loaded_data.coords[1].size() - 1);
+   double period_1 = span_1 + cell_width_1;
+
+   double lower_bound_2 = std::min(loaded_data.coords[2].front(), loaded_data.coords[2].back());
+   double upper_bound_2 = std::max(loaded_data.coords[2].front(), loaded_data.coords[2].back()); 
+   double span_2 = std::abs(loaded_data.coords[2].back() - loaded_data.coords[2].front());
+   double cell_width_2 = span_2 / (loaded_data.coords[2].size() - 1);
+   double period_2 = span_2 + cell_width_2;
+   
+   periods = {period_0, period_1, period_2};
+      
+   bounds[0] = std::make_pair(lower_bound_0, upper_bound_0);
+   bounds[1] = std::make_pair(lower_bound_1, upper_bound_1);
+   bounds[2] = std::make_pair(lower_bound_2, upper_bound_2);
+
+
+   for (int i = 0; i < 3; i++) {
+      hunt_threshold[i] = std::min(1, static_cast<int>(std::pow(static_cast<double>(loaded_data.coords[i].size()), 0.25)));
    }
 }
 
@@ -84,8 +109,16 @@ int TriInterp::hunt(int axis, const std::vector<double>& axis_line, double query
    return saved_index[axis]; 
 }
 
-std::vector<Neighbor> TriInterp::getNeighbors(std::array<double, 3> position) {
-
+std::vector<Neighbor> TriInterp::getNeighbors(std::array<double, 3>& position) { 
+   
+   for (int i = 0; i < 3; i++) {
+      if (periodic[i]) {
+         position[i] = bounds[i].first + std::fmod(position[i] - bounds[i].first + periods[i], periods[i]); 
+      }
+      if (position[i] < bounds[i].first || position[i] > bounds[i].second) {
+         throw std::runtime_error("Position out of bounds");
+      }
+   }
    std::vector<Neighbor> neighbors;
    int neighbor_index_0 = correlated[0] ? hunt(0, loaded_data.coords[0], position[0]) : locate(0, loaded_data.coords[0], position[0]);
    int neighbor_index_1 = correlated[1] ? hunt(1, loaded_data.coords[1], position[1]) : locate(1, loaded_data.coords[1], position[1]);

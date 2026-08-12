@@ -78,6 +78,7 @@ PYBIND11_MODULE(tree_core, m) {
       .def_readwrite("coordinate_units", &FieldConfig::coordinate_units)
       .def_readwrite("coordinate_convert", &FieldConfig::coordinate_convert)
       .def_readwrite("coord_order", &FieldConfig::coord_order)
+      .def_readwrite("periodic", &FieldConfig::periodic)
       .def_readwrite("coordinate_system", &FieldConfig::coordinate_system)
       .def_readwrite("vector_convention", &FieldConfig::vector_convention)
       .def_readwrite("altitude", &FieldConfig::altitude)
@@ -104,7 +105,7 @@ PYBIND11_MODULE(tree_core, m) {
       .def_readonly("values", &Read::values);
 
    py::class_<TriInterp>(m, "TriInterp")
-      .def(py::init<Read&>())
+      .def(py::init<Read&, std::array<bool,3>>())
       .def("interp", &TriInterp::interp);
 }
    
