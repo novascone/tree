@@ -32,14 +32,5 @@
    periodic = lon
    vector_convention = ENU
    sentinel = -99999.0
-  []
-  [AWE]
-   type = scalar
-   source = ~/awe-data/awe_l3c_q20_2024146T2343_02882_v01.nc
-   grid_type = unstructured
-   variables = Radiance
-   coordinates = Latitude Longitude 
-   coordinate_system = geographic
-   altitude = 85000
   [] 
 []

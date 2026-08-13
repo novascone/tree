@@ -9,7 +9,7 @@ import numpy as np
 import openvdb as vdb
 from . import interaction
 from .materials import mat_nodes, sca_mat_nodes, volume_mat_nodes
-from .utils import convert_to_cart, arc_length, get_speeds, fibonacci_sphere, stratified_random
+from .utils import convert_to_cart, arc_length, get_speeds, fibonacci_sphere, stratified_random, get_ro
 
 def register_field_operators(): 
     unregister_field_operators()
@@ -67,13 +67,11 @@ def vec_comp_execute_factory(idx):
                     seeds.append([lat, lon, alt])
                 alt += props.vec_alt_step
         elif props.vec_seeding_mode == 'STRATIFIED':
-            strat = stratified_random(props.vec_lat_cell, props.vec_lon_cell, props.vec_alt_cell, 90, -90, 180, -180,
-                                      props.vec_alt_max, props.vec_alt_min)
+            strat = stratified_random(props.vec_lat_cell, props.vec_lon_cell, props.vec_alt_cell, props.vec_alt_max, props.vec_alt_min)
             seeds = strat
         
             #seeds = [[lat, lon, 86.0] for lat in range(0, 31, 6) for lon in range(0, 31, 6)]
-        seeds = np.asarray(seeds)
-        seeds[:, :2] = np.radians(seeds[:, :2]) 
+        seeds = np.asarray(seeds) 
         t0 = time.perf_counter()
         interaction.streamlines[idx] = tree_core.driveField(interaction.read[idx], seeds, props.interval_start, props.interval_end, props.step_size)
         t1 = time.perf_counter()
@@ -101,24 +99,26 @@ def vec_viz_execute_factory(idx):
             t_mat += time.perf_counter() - t0
             alt_collection = bpy.data.collections.new(f'{alts[i]}_m')
             streamline_collection.children.link(alt_collection) 
+
+
             
-            alt_streams = [s for s in interaction.streamlines[idx] if len(s) > 0.0 and abs(s[0][2] - alt) < 0.01]
+            alt_streams = [s for s in interaction.streamlines[idx] if len(s) > 0.0 and abs(get_ro(s[0][0], s[0][1], s[0][2]) - alt) < 0.01]
 
-            lats_np = np.array([p[0] for s in alt_streams for p in s])
-            lons_np = np.array([p[1] for s in alt_streams for p in s])
-            alts_np = np.array([p[2] for s in alt_streams for p in s])
+            xs_np = np.array([p[0] for s in alt_streams for p in s])
+            ys_np = np.array([p[1] for s in alt_streams for p in s])
+            zs_np = np.array([p[2] for s in alt_streams for p in s])
 
-            positions = np.stack([lats_np, lons_np, alts_np], axis=1)
+            positions = np.stack([xs_np, ys_np, zs_np], axis=1) 
             speeds = get_speeds(positions, idx)
             normalized_speeds = np.zeros(len(speeds))
+            positions = positions / 6371000.0
+            flat_positions = positions.flatten()
 
             if len(speeds) > 0:
                 percentile_clamp = np.percentile(speeds, 99)
                 if percentile_clamp != 0:
                     normalized_speeds = np.clip(speeds / percentile_clamp, 0, 1) 
-            
-            x, y, z = convert_to_cart(lats_np, lons_np, alts_np)
-            flat_x_y_z = np.stack([x, y, z], axis=1).flatten()
+              
 
             t0 = time.perf_counter()
 
@@ -132,18 +132,17 @@ def vec_viz_execute_factory(idx):
             flat_phase = np.array([random.random() for s in alt_streams])
             total_points = sum(len(s) for s in alt_streams)
             flat_radius = np.full(total_points, 0.1)
-            curve_data.position_data.foreach_set('vector', flat_x_y_z)
+            curve_data.position_data.foreach_set('vector', flat_positions)
             phase_attr.data.foreach_set('value', flat_phase)
             radius_attr.data.foreach_set('value', flat_radius)
             speed_attr.data.foreach_set('value', normalized_speeds)
 
             arc_segments = []
             for s in alt_streams:
-                pts = np.stack(convert_to_cart(
+                pts = np.stack((
                                np.array([p[0] for p in s]),
                                np.array([p[1] for p in s]),
-                               np.array([p[2] for p in s])
-                ), axis=1)
+                               np.array([p[2] for p in s])), axis=1)
                 lens = arc_length(pts)
                 arc_segments.append(lens / lens[-1])
             flat_arc = np.concatenate(arc_segments)
@@ -166,12 +165,9 @@ def point_cloud_field_execute_factory(idx):
         props = context.scene.tree_field_props[idx]
         point_radius = context.scene.tree_field_props[idx].point_radius 
 
-        seeds = stratified_random(props.sca_lat_cell, props.sca_lon_cell, props.sca_alt_cell, 90, -90, 180, -180,
-                                  props.sca_alt_max, props.sca_alt_min)
+        seeds = stratified_random(props.sca_lat_cell, props.sca_lon_cell, props.sca_alt_cell, props.sca_alt_max, props.sca_alt_min)
 
         positions = np.array(seeds)
-        positions[:, 1] = positions[:, 1] % 360 # NAVGEM 
-        positions[:, :2] = np.radians(positions[:, :2])
         vals = get_speeds(positions, idx)
 
         mask = vals >= props.threshold
