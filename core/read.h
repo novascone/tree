@@ -53,8 +53,8 @@ class Read {
    static hid_t openHDF5File(const std::string& file_path);
    static std::vector<std::vector<double>> loadValues(const FieldConfig& field_config_p, const std::vector<std::vector<double>>& coords);
    static std::vector<std::vector<double>> loadCoords(const FieldConfig& field_config_p);
-   static void reorder_coords(const FieldConfig& field_config,  std::vector<std::vector<double>>& coords);
-   static void reorder_values(const FieldConfig& field_config, const std::vector<std::vector<double>>& coords, std::vector<std::vector<double>>& values);
+   static void reorderCoords(const FieldConfig& field_config,  std::vector<std::vector<double>>& coords);
+   static void reorderValues(const FieldConfig& field_config, const std::vector<std::vector<double>>& coords, std::vector<std::vector<double>>& values);
    static void loadNetCDFValues(const FieldConfig& field_config, const std::vector<std::vector<double>>& coords,  std::vector<std::vector<double>>& values);
    static void loadNetCDFCoords(const FieldConfig& field_config,  std::vector<std::vector<double>>& coords);
    static void loadHDF5Values(const FieldConfig& field_config, const std::vector<std::vector<double>>& coords, std::vector<std::vector<double>>& values);

@@ -1,6 +1,4 @@
 
-
-from .. import tree_core
 from . import interaction
 import math
 import numpy as np
@@ -11,9 +9,10 @@ def fibonacci_sphere(n):
     for i in range(n):
         theta = 2 * math.pi * i /golden
         phi = math.acos(1 - 2 * (i + 0.5) / n)
-        lat = math.degrees(math.pi / 2 - phi)
-        lon = math.degrees(theta % (2 * math.pi)) - 180
-        points.append((lat, lon))
+        x = math.sin(phi) * math.cos(theta)
+        y = math.sin(phi) * math.sin(theta)
+        z = math.cos(phi)
+        points.append((x, y, z))
     return points
 
 def stratified_random(x_cell, y_cell, z_cell, z_max, z_min):
@@ -79,22 +78,4 @@ def arc_length(points):
     norms = np.linalg.norm(diffs, axis=1)
     lengths= np.concatenate([[0.0], np.cumsum(norms)])
     return lengths
-
-def get_speeds(positions, idx): 
-    R = 6371000.0
-    r = np.linalg.norm(positions, axis=1) 
-    lats = np.asin(positions[:, 2]/r)
-    lons = np.atan2(positions[:, 1], positions[:, 0])
-    alts = r - R
-    positions = np.stack([lats, lons, alts], axis=1) 
-    tri_interp = tree_core.TriInterp(interaction.read[idx], [False, True, False])
-    speeds = np.zeros(len(positions))
-    for i, pos in enumerate(positions):
-        try:
-            speeds[i] = np.linalg.norm(tri_interp.interp(pos))
-        except RuntimeError:
-            pass
-    return speeds
-
-
 

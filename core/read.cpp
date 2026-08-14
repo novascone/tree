@@ -86,7 +86,7 @@ void Read::loadNetCDFValues(const FieldConfig& field_config, const std::vector<s
          convertUnits(field_config.variable_convert.value(), values);
       }
    if (field_config.coord_order.has_value()) {
-      Read::reorder_values(field_config, coords, values);
+      Read::reorderValues(field_config, coords, values);
    }
    }  
 }
@@ -103,7 +103,7 @@ void Read::loadNetCDFCoords(const FieldConfig& field_config, std::vector<std::ve
          convertUnits(field_config.coordinate_convert.value(), coords);
          }
    if (field_config.coord_order.has_value()) {
-      Read::reorder_coords(field_config, coords) ;
+      Read::reorderCoords(field_config, coords) ;
    }
    } 
 }
@@ -119,7 +119,7 @@ void Read::loadHDF5Values(const FieldConfig &field_config, const std::vector<std
          }
    }
    if (field_config.coord_order.has_value()) {
-      Read::reorder_values(field_config, coords, values);
+      Read::reorderValues(field_config, coords, values);
    }
 }
 
@@ -133,12 +133,12 @@ void Read::loadHDF5Coords(const FieldConfig &field_config, std::vector<std::vect
          convertUnits(field_config.coordinate_convert.value(), coords);
          }
    if (field_config.coord_order.has_value()) {
-      Read::reorder_coords(field_config, coords) ;
+      Read::reorderCoords(field_config, coords) ;
       }
    }
 }
 
-void Read::reorder_coords(const FieldConfig &field_config, std::vector<std::vector<double>> &coords) {
+void Read::reorderCoords(const FieldConfig &field_config, std::vector<std::vector<double>> &coords) {
    std::array<int, 3> perm;
    std::vector<std::string> standard = {"lat", "lon", "alt"};
    std::vector<std::vector<double>> reorder;
@@ -159,7 +159,7 @@ void Read::reorder_coords(const FieldConfig &field_config, std::vector<std::vect
    coords = reorder;
 }
 
-void Read::reorder_values(const FieldConfig &field_config, const std::vector<std::vector<double>> &coords, std::vector<std::vector<double>> &values) {
+void Read::reorderValues(const FieldConfig &field_config, const std::vector<std::vector<double>> &coords, std::vector<std::vector<double>> &values) {
    std::array<int, 3> perm;
    std::array<int, 3> inv_perm;
    std::vector<std::string> standard = {"lat", "lon", "alt"}; 

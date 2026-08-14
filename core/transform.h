@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath> 
 #include <string>
+#include <stdexcept>
 
 template <typename CoordSystem>
 struct Transform;
@@ -15,8 +16,8 @@ template <>
 struct Transform<Geographic> {
    static constexpr double R_meters = 6371000;
    static const std::array<std::string, 3> axis_names;
-   static std::array<double,3> to_cart(double lat, double lon, double alt);
-   static std::array<double,3> from_cart(double x, double y, double z); 
+   static std::array<double,3> toCart(double lat, double lon, double alt);
+   static std::array<double,3> fromCart(double x, double y, double z); 
 };
 
 template <typename VectorConvention>
@@ -26,7 +27,7 @@ struct ENU {};
 
 template <>
 struct Basis<ENU> {
-   static std::array<std::array<double,3>,3> local_basis(double x, double y, double z);
+   static std::array<std::array<double,3>,3> localBasis(double x, double y, double z);
 };
 
 #endif

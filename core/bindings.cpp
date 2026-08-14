@@ -13,7 +13,7 @@ namespace py = pybind11;
 PYBIND11_MAKE_OPAQUE(std::vector<FieldConfig>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::string>);
 
-StreamlineSet driveFieldSwitch(Read &loaded_data, std::vector<std::vector<double>> &seeds, double interval_start, double interval_end, double initial_step_size) {
+StreamlineSet driveFieldDispatch(Read& loaded_data, std::vector<std::vector<double>>& seeds, double interval_start, double interval_end, double initial_step_size) {
    if (loaded_data.coordinate_system == "geographic") {
       if (loaded_data.vector_convention.value() == "enu") {
          return driveField<Geographic, ENU>(loaded_data, seeds, interval_start, interval_end, initial_step_size);
@@ -24,13 +24,23 @@ StreamlineSet driveFieldSwitch(Read &loaded_data, std::vector<std::vector<double
    }
    else {
          throw std::runtime_error("Unrecognized coordinate system");
-      }
+   }
+}
+
+std::vector<double> getMagsDispatch(Read& loaded_data, std::vector<std::array<double,3>> positions) {
+   if (loaded_data.coordinate_system == "geographic") { 
+      return getMags<Geographic>(loaded_data, positions);     
+   }
+   else {
+         throw std::runtime_error("Unrecognized coordinate system");
+   }  
 }
 
 PYBIND11_MODULE(tree_core, m) {
    m.doc() = "TREE core module";
    m.def("build_mesh", &buildMesh); 
-   m.def("driveField", &driveFieldSwitch); 
+   m.def("drive_field", &driveFieldDispatch);
+   m.def("get_mags", &getMagsDispatch);
  
    py::bind_vector<std::vector<FieldConfig>>(m, "FieldConfigList");
    py::bind_vector<std::vector<std::string>>(m, "StringVector");  

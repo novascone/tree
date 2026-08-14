@@ -7,6 +7,7 @@
 #include "transform.h"
 #include "adaptiverk5.h"
 #include "integrator.h"
+#include "query.h"
 #include <omp.h>
 #include <cmath>
 
@@ -52,8 +53,8 @@ struct Derivative {
    }
 
    void operator()(const double, std::vector<double>& position, std::vector<double>& derivative) {
-      std::array<double,3> native_pos = Transform<CoordSystem>::from_cart(position[0], position[1], position[2]); 
-      std::array<std::array<double,3>,3> current_basis = Basis<VectorConvention>::local_basis(position[0], position[1], position[2]);
+      std::array<double,3> native_pos = Transform<CoordSystem>::fromCart(position[0], position[1], position[2]); 
+      std::array<std::array<double,3>,3> current_basis = Basis<VectorConvention>::localBasis(position[0], position[1], position[2]);
       std::vector<double> arbitrary = interp.interp({native_pos[0], native_pos[1], native_pos[2]});
       std::fill(derivative.begin(), derivative.end(), 0.0);
       for (int i = 0; i < 3; i++) {
@@ -73,18 +74,9 @@ StreamlineSet driveField(Read& loaded_data, std::vector<std::vector<double>>& se
 
    double default_absolute_error = 1.0e-10;
    double default_relative_error = 1.0e-10;
-   double default_min_step_size = 1.0e-12;
-
-   std::array<bool, 3> periodic {};
+   double default_min_step_size = 1.0e-12; 
    
-   if (loaded_data.periodic.has_value()) {
-      for (int i = 0; i < 3; i++) {
-         for (int j = 0; j < static_cast<int>((*loaded_data.periodic).size()); j++) {
-            if (Transform<CoordSystem>::axis_names[i] == (*loaded_data.periodic)[j])
-               periodic[i] = true;
-         }
-      }
-   }
+   std::array<bool,3> periodic = getPeriodic<CoordSystem>(loaded_data);
 
    StreamlineSet results(static_cast<int>(seeds.size()));
    #pragma omp parallel for 

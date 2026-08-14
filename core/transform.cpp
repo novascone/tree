@@ -3,7 +3,7 @@
 
 const std::array<std::string, 3> Transform<Geographic>::axis_names = {"lat", "lon", "alt"};
 
-std::array<double,3> Transform<Geographic>::to_cart(double lat, double lon, double alt) {
+std::array<double,3> Transform<Geographic>::toCart(double lat, double lon, double alt) {
 
    double r = R_meters + alt;
    double x = r * cos(lat) * cos(lon);
@@ -15,7 +15,7 @@ std::array<double,3> Transform<Geographic>::to_cart(double lat, double lon, doub
    return xyz;
 }
 
-std::array<double,3> Transform<Geographic>::from_cart(double x, double y, double z) {
+std::array<double,3> Transform<Geographic>::fromCart(double x, double y, double z) {
 
    double r = sqrt(x*x + y*y + z*z);
    double lat = asin(z/r);
@@ -27,7 +27,7 @@ std::array<double,3> Transform<Geographic>::from_cart(double x, double y, double
    return lla;
 }
 
-std::array<std::array<double,3>,3> Basis<ENU>::local_basis(double x, double y, double z) {
+std::array<std::array<double,3>,3> Basis<ENU>::localBasis(double x, double y, double z) {
 
    std::array<std::array<double,3>,3> basis {};
    std::array<double,3> up {};
@@ -43,6 +43,10 @@ std::array<std::array<double,3>,3> Basis<ENU>::local_basis(double x, double y, d
    up = {x, y, z};
 
    double east_mag = sqrt(x*x + y*y);
+
+   if (east_mag <= 1e-5) 
+      throw std::runtime_error("East magnitude too small");
+
    east = {-y/east_mag, x/east_mag, 0};
    
    north = {-(x*z)/east_mag, -(y*z)/east_mag, (x*x + y*y)/east_mag};
