@@ -38,7 +38,8 @@ hid_t Read::openHDF5File(const std::string& file_path) {
 
 Read::Read(){}
 
-Read::Read(std::vector<std::vector<double>> coords_p, std::vector<std::vector<double>> values_p): coords(coords_p), values(values_p) {}
+Read::Read(std::vector<std::vector<double>> coords_p, std::vector<std::vector<double>> values_p, std::vector<std::string> variable_directions_p):
+           coords(coords_p), values(values_p), variable_directions(variable_directions_p) {}
 
 Read::Read(const FieldConfig& field_config_p):  coords(loadCoords(field_config_p)), values(loadValues(field_config_p, coords)),
            variable_directions(field_config_p.variable_directions), coordinate_system(field_config_p.coordinate_system), periodic(field_config_p.periodic), 

@@ -47,7 +47,7 @@ class Read {
    const std::optional<std::string> vector_convention;
    const std::optional<double> sentinel;
    Read();
-   Read(std::vector<std::vector<double>> coords, std::vector<std::vector<double>> values);
+   Read(std::vector<std::vector<double>> coords, std::vector<std::vector<double>> values, std::vector<std::string> variable_directions);
    Read(const FieldConfig& field_config_p); 
    static int openNetCDF(const std::string& file_path,  int NCFlag);
    static hid_t openHDF5File(const std::string& file_path);

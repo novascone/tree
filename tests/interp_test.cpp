@@ -8,9 +8,9 @@ TEST_CASE("TriLinear interp test") {
     
    std::vector<std::vector<double>> coords = {{0.0, 1.0}, {0.0, 1.0}, {0.0, 1.0}};
    std::vector<std::vector<double>> values = {{0, 0, 0, 0, 1, 1, 1, 1}}; 
-   Read read(coords, values);
+   Read read(coords, values, {});
 
-   TriInterp tri_interp(read);
+   TriInterp tri_interp(read, {false, false, false});
 
    std::vector<double> result = tri_interp.interp({0.5, 0.5, 0.5});
    

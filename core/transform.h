@@ -20,6 +20,16 @@ struct Transform<Geographic> {
    static std::array<double,3> fromCart(double x, double y, double z); 
 };
 
+struct Cartesian {};
+
+template<>
+struct Transform<Cartesian> {
+   static const std::array<std::string, 3> axis_names;
+   static std::array<double,3> toCart(double x, double y, double z);
+   static std::array<double,3> fromCart(double x, double y, double z); 
+
+};
+
 template <typename VectorConvention>
 struct Basis;
 
@@ -29,5 +39,13 @@ template <>
 struct Basis<ENU> {
    static std::array<std::array<double,3>,3> localBasis(double x, double y, double z);
 };
+
+struct Standard {};
+
+template<>
+struct Basis<Standard> {
+   static std::array<std::array<double,3>,3> localBasis(double, double, double);
+};
+
 
 #endif

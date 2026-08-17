@@ -115,22 +115,39 @@ std::vector<Neighbor> TriInterp::getNeighbors(std::array<double, 3>& position) {
       if (periodic[i]) {
          position[i] = bounds[i].first + std::fmod(position[i] - bounds[i].first + periods[i], periods[i]); 
       }
-      if (position[i] < bounds[i].first || position[i] > bounds[i].second) {
+      else if (position[i] < bounds[i].first || position[i] > bounds[i].second) {
          throw std::runtime_error("Position out of bounds");
       }
    }
    std::vector<Neighbor> neighbors;
    int neighbor_index_0 = correlated[0] ? hunt(0, loaded_data.coords[0], position[0]) : locate(0, loaded_data.coords[0], position[0]);
    int neighbor_index_1 = correlated[1] ? hunt(1, loaded_data.coords[1], position[1]) : locate(1, loaded_data.coords[1], position[1]);
-   int neighbor_index_2 = correlated[2] ? hunt(2, loaded_data.coords[2], position[2]) : locate(2, loaded_data.coords[2], position[2]); 
+   int neighbor_index_2 = correlated[2] ? hunt(2, loaded_data.coords[2], position[2]) : locate(2, loaded_data.coords[2], position[2]);
+   if (periodic[0] and position[0] > bounds[0].second) neighbor_index_0 += 1;
+   if (periodic[1] and position[1] > bounds[1].second) neighbor_index_1 += 1;
+   if (periodic[2] and position[2] > bounds[2].second) neighbor_index_2 += 1;
+
+   int n0 = static_cast<int>(loaded_data.coords[0].size());
+   int n1 = static_cast<int>(loaded_data.coords[1].size());
+   int n2 = static_cast<int>(loaded_data.coords[2].size());
+
    for (int i = 0; i <= 1; i++) {
       for (int j = 0; j <= 1; j++) {
          for (int k = 0; k <= 1; k++) {
-            std::array<double, 3> coords {}; 
-            coords[0] = loaded_data.coords[0][neighbor_index_0 + i];
-            coords[1] = loaded_data.coords[1][neighbor_index_1 + j];
-            coords[2] = loaded_data.coords[2][neighbor_index_2 + k];
-            int index = Read::convertIDXFlat(neighbor_index_0 + i, neighbor_index_1 + j, neighbor_index_2 + k,
+            std::array<double, 3> coords {};
+            if (periodic[0] and neighbor_index_0 + i == n0) {
+               coords[0] = loaded_data.coords[0][0] + periods[0];
+            }
+            else coords[0] = loaded_data.coords[0][neighbor_index_0 + i];
+            if (periodic[1] and neighbor_index_1 + j == n1) {
+               coords[1] = loaded_data.coords[1][0] + periods[1];
+            }
+            else coords[1] = loaded_data.coords[1][neighbor_index_1 + j];
+            if (periodic[2] and neighbor_index_2 + k == n2) {
+               coords[2] = loaded_data.coords[2][0] + periods[2];
+            }
+            else coords[2] = loaded_data.coords[2][neighbor_index_2 + k];
+            int index = Read::convertIDXFlat((neighbor_index_0 + i) % n0, (neighbor_index_1 + j) % n1, (neighbor_index_2 + k) % n2,
                                        static_cast<int>(loaded_data.coords[1].size()), static_cast<int>(loaded_data.coords[2].size()));
             std::vector<double> values;
             for ( const std::vector<double>& var : loaded_data.values) {

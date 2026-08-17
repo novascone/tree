@@ -56,3 +56,24 @@ std::array<std::array<double,3>,3> Basis<ENU>::localBasis(double x, double y, do
    return basis;
 
 }
+
+const std::array<std::string, 3> Transform<Cartesian>::axis_names = {"x", "y", "z"};
+ 
+
+std::array<double,3> Transform<Cartesian>::toCart(double x, double y, double z) {
+   
+   return {x, y, z};
+}
+
+std::array<double,3> Transform<Cartesian>::fromCart(double x, double y, double z) {
+   
+   return {x, y, z};
+}
+
+std::array<std::array<double,3>,3> Basis<Standard>::localBasis(double, double, double) {
+
+   return {{{1,0,0},{0,1,0},{0,0,1}}};
+}
+
+
+

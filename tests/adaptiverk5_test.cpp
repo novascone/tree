@@ -19,13 +19,13 @@ TEST_CASE("Adaptive Runge-Kutta 5th order circular flow test") {
       }
    }
 
-   Read read(coords, values);
+   Read read(coords, values, std::vector<std::string> {"+x", "+y", "+z"});
 
    
    
    std::vector<std::vector<double>> seeds = {{{1.0, 0.0, 0.0}}}; 
 
-   StreamlineSet results = driveField(read, seeds, 0.0, M_PI*2, 0.1);
+   StreamlineSet results = driveField<Cartesian, Standard>(read, seeds, 0.0, M_PI*2, 0.1);
 
 REQUIRE(results[0].back()[0] == Catch::Approx(1.0));
 
