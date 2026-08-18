@@ -9,7 +9,7 @@ import numpy as np
 import openvdb as vdb
 from . import interaction
 from .materials import mat_nodes, sca_mat_nodes, volume_mat_nodes
-from .utils import convert_to_cart, arc_length, fibonacci_sphere, stratified_random, get_ro
+from .utils import convert_to_cart, arc_length, fibonacci_sphere, stratified_random, get_ro, seeding_dispatch, args_dispatch
 
 def register_field_operators(): 
     unregister_field_operators()
@@ -61,17 +61,12 @@ def vec_comp_execute_factory(idx):
         props = context.scene.tree_field_props[idx]
         alt = props.vec_alt_min
         seeds = []
-        if props.vec_seeding_mode == 'FIBONACCI':
-            fib = fibonacci_sphere(props.seeds_per_level)  
-            while alt <= props.vec_alt_max + 1e-6:
-                for x, y, z in fib:
-                    seeds.append([x*(R+alt), y*(R+alt), z*(R+alt)])
-                alt += props.vec_alt_step
-        elif props.vec_seeding_mode == 'STRATIFIED':
-            strat = stratified_random(props.vec_lat_cell, props.vec_lon_cell, props.vec_alt_cell, props.vec_alt_max, props.vec_alt_min)
-            seeds = strat
-        
-            #seeds = [[lat, lon, 86.0] for lat in range(0, 31, 6) for lon in range(0, 31, 6)]
+        seeding_tuple = (props.vec_seeding_mode.lower(), interaction.tree_config.geometry.type.lower())
+        seeding = seeding_dispatch(*seeding_tuple)
+        seeding_args = args_dispatch(*seeding_tuple)
+        args = seeding_args(props)
+        seeds = seeding(*args)
+        #seeds = [[lat, lon, 86.0] for lat in range(0, 31, 6) for lon in range(0, 31, 6)]
         seeds = np.asarray(seeds) 
         t0 = time.perf_counter()
         interaction.streamlines[idx] = tree_core.drive_field(interaction.read[idx], seeds, props.interval_start, props.interval_end, props.step_size)
