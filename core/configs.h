@@ -14,7 +14,7 @@ struct GeometryConfig {
    std::string name;
    std::string type;
    std::optional<std::string> source;
-   std::map<std::string, std::string> parameters;
+   std::map<std::string, double> parameters;
    
 };
 

@@ -1,7 +1,7 @@
 [Geometry]
    [main_sphere]
      type = sphere 
-     radius = 6371.0
+     radius = 6371000.0
      resolution = 64
    []
 []

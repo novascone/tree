@@ -13,10 +13,11 @@ namespace py = pybind11;
 PYBIND11_MAKE_OPAQUE(std::vector<FieldConfig>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::string>);
 
-StreamlineSet driveFieldDispatch(Read& loaded_data, std::vector<std::vector<double>>& seeds, double interval_start, double interval_end, double initial_step_size) {
+StreamlineSet driveFieldDispatch(Read& loaded_data, const std::map<std::string, double>& geometric_parameters, std::vector<std::vector<double>>& seeds,
+                                 double interval_start, double interval_end, double initial_step_size) {
    if (loaded_data.coordinate_system == "geographic") {
       if (loaded_data.vector_convention.value() == "enu") {
-         return driveField<Geographic, ENU>(loaded_data, seeds, interval_start, interval_end, initial_step_size);
+         return driveField<Geographic, ENU>(loaded_data, geometric_parameters, seeds, interval_start, interval_end, initial_step_size);
       }
       else {
          throw std::runtime_error("Unrecognized vector convention");
@@ -27,9 +28,9 @@ StreamlineSet driveFieldDispatch(Read& loaded_data, std::vector<std::vector<doub
    }
 }
 
-std::vector<double> getMagsDispatch(Read& loaded_data, std::vector<std::array<double,3>> positions) {
+std::vector<double> getMagsDispatch(Read& loaded_data,  const std::map<std::string, double>& geometric_parameters, std::vector<std::array<double,3>> positions) {
    if (loaded_data.coordinate_system == "geographic") { 
-      return getMags<Geographic>(loaded_data, positions);     
+      return getMags<Geographic>(loaded_data, geometric_parameters, positions);     
    }
    else {
          throw std::runtime_error("Unrecognized coordinate system");

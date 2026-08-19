@@ -9,9 +9,9 @@
 const double PI = 3.14159265358979323846;
 
 namespace {
-   Mesh buildSphere(std::string name, std::map<std::string, std::string> parameters) { 
-      double rho = std::stod(parameters["radius"]);
-      double resolution = std::stod(parameters["resolution"]);
+   Mesh buildSphere(std::string name, std::map<std::string, double> parameters) { 
+      double rho = parameters["radius"];
+      double resolution = parameters["resolution"];
    
       Mesh sphere;
       sphere.name = name;

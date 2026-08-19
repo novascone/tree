@@ -24,12 +24,12 @@ std::array<bool,3> getPeriodic(Read& loaded_data) {
 
 template <typename CoordSystem>
 
-std::vector<double> getMags(Read& loaded_data, std::vector<std::array<double,3>> positions) {
+std::vector<double> getMags(Read& loaded_data, const std::map<std::string, double>& geometric_parameters, std::vector<std::array<double,3>> positions) {
    TriInterp interp(loaded_data, getPeriodic<CoordSystem>(loaded_data));
    std::vector<double> mags {};
 
    for (std::array<double,3> position : positions) { 
-      std::array<double,3> native_pos = Transform<CoordSystem>::fromCart(position[0], position[1], position[2]);
+      std::array<double,3> native_pos = Transform<CoordSystem>::fromCart(position[0], position[1], position[2], geometric_parameters);
 
       try {
       std::vector<double> interp_vector = interp.interp({native_pos[0], native_pos[1], native_pos[2]});

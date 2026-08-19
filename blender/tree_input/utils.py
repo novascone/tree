@@ -73,14 +73,17 @@ def stratified_random_sphere(row_cell, arc_per_row, z_cell, z_max, z_min):
             ro = math.sqrt(max(0, r**2 - z_center**2)) 
             n_theta_row = math.ceil(2*math.pi * ro / arc_per_row)
             z_points = z + np.random.uniform(0, row_cell, n_theta_row)
+            mask = (z_points >= -r) & (z_points <= r)
+            z_points = z_points[mask]
             ro_points = np.sqrt(np.maximum(0, r**2 - z_points**2))
             theta_idx = np.arange(n_theta_row)
+            theta_idx = theta_idx[mask]
             if (n_theta_row != 0):
                 step = 2*math.pi / n_theta_row
             else:
                 step = 0.0 
             theta = theta_idx * step 
-            theta += np.random.uniform(0, step, n_theta_row)
+            theta += np.random.uniform(0, step, len(theta_idx))
             x = ro_points*np.cos(theta)
             y = ro_points*np.sin(theta) 
             coords.append(np.stack([x, y, z_points], axis=1))
@@ -131,4 +134,7 @@ args = {
 def args_dispatch(seeding_type, geometry):
     
     return args[(seeding_type, geometry)]
+
+def distance_from(x, y, z):
+    return math.sqrt(x**2 + y**2 + z**2)
 

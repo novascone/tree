@@ -3,9 +3,10 @@
 
 const std::array<std::string, 3> Transform<Geographic>::axis_names = {"lat", "lon", "alt"};
 
-std::array<double,3> Transform<Geographic>::toCart(double lat, double lon, double alt) {
+std::array<double,3> Transform<Geographic>::toCart(double lat, double lon, double alt, const std::map<std::string, double>& geometric_parameters) {
 
-   double r = R_meters + alt;
+   double R = geometric_parameters.at("radius");
+   double r = R + alt;
    double x = r * cos(lat) * cos(lon);
    double y = r * cos(lat) * sin(lon);
    double z = r * sin(lat);
@@ -15,12 +16,13 @@ std::array<double,3> Transform<Geographic>::toCart(double lat, double lon, doubl
    return xyz;
 }
 
-std::array<double,3> Transform<Geographic>::fromCart(double x, double y, double z) {
+std::array<double,3> Transform<Geographic>::fromCart(double x, double y, double z, const std::map<std::string, double>& geometric_parameters) {
 
+   double R = geometric_parameters.at("radius");
    double r = sqrt(x*x + y*y + z*z);
    double lat = asin(z/r);
    double lon = atan2(y, x);
-   double alt = r - R_meters;
+   double alt = r - R;
 
    std::array<double,3> lla = {lat, lon, alt};
 
@@ -60,12 +62,12 @@ std::array<std::array<double,3>,3> Basis<ENU>::localBasis(double x, double y, do
 const std::array<std::string, 3> Transform<Cartesian>::axis_names = {"x", "y", "z"};
  
 
-std::array<double,3> Transform<Cartesian>::toCart(double x, double y, double z) {
+std::array<double,3> Transform<Cartesian>::toCart(double x, double y, double z, const std::map<std::string, double>&) {
    
    return {x, y, z};
 }
 
-std::array<double,3> Transform<Cartesian>::fromCart(double x, double y, double z) {
+std::array<double,3> Transform<Cartesian>::fromCart(double x, double y, double z, const std::map<std::string, double>&) {
    
    return {x, y, z};
 }

@@ -71,7 +71,7 @@ def set_geometry_parameters(attributes) -> dict:
     parameters = {}
     for k, v in attributes.items():
         if k not in ("type", "source"):
-            parameters[k] = v
+            parameters[k] = cast(v)
     return parameters
 
 def cast(value):

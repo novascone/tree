@@ -9,7 +9,7 @@ import numpy as np
 import openvdb as vdb
 from . import interaction
 from .materials import mat_nodes, sca_mat_nodes, volume_mat_nodes
-from .utils import convert_to_cart, arc_length, fibonacci_sphere, stratified_random, get_ro, seeding_dispatch, args_dispatch
+from .utils import convert_to_cart, arc_length, fibonacci_sphere, stratified_random, get_ro, seeding_dispatch, args_dispatch, distance_from
 
 def register_field_operators(): 
     unregister_field_operators()
@@ -56,10 +56,8 @@ def unregister_field_operators():
     interaction._field_operators.clear()
 
 def vec_comp_execute_factory(idx): 
-    def execute(self, context):
-        R = 6371000.0
-        props = context.scene.tree_field_props[idx]
-        alt = props.vec_alt_min
+    def execute(self, context): 
+        props = context.scene.tree_field_props[idx] 
         seeds = []
         seeding_tuple = (props.vec_seeding_mode.lower(), interaction.tree_config.geometry.type.lower())
         seeding = seeding_dispatch(*seeding_tuple)
@@ -69,7 +67,7 @@ def vec_comp_execute_factory(idx):
         #seeds = [[lat, lon, 86.0] for lat in range(0, 31, 6) for lon in range(0, 31, 6)]
         seeds = np.asarray(seeds) 
         t0 = time.perf_counter()
-        interaction.streamlines[idx] = tree_core.drive_field(interaction.read[idx], seeds, props.interval_start, props.interval_end, props.step_size)
+        interaction.streamlines[idx] = tree_core.drive_field(interaction.read[idx], interaction.tree_config.geometry.parameters, seeds, props.interval_start, props.interval_end, props.step_size)
         t1 = time.perf_counter()
         print(f"Integration: {t1 - t0:.3f}s")
         return {'FINISHED'}
@@ -105,10 +103,10 @@ def vec_viz_execute_factory(idx):
             zs_np = np.array([p[2] for s in alt_streams for p in s])
 
             positions = np.stack([xs_np, ys_np, zs_np], axis=1) 
-            speeds = tree_core.get_mags(interaction.read[idx], positions)
+            speeds = tree_core.get_mags(interaction.read[idx], interaction.tree_config.geometry.parameters, positions)
             speeds = np.asarray(speeds)
             normalized_speeds = np.zeros(len(speeds))
-            positions = positions / 6371000.0
+            positions = positions / distance_from(*interaction.geometry.positions[0:3]) 
             flat_positions = positions.flatten()
 
             if len(speeds) > 0:
@@ -165,7 +163,7 @@ def point_cloud_field_execute_factory(idx):
         seeds = stratified_random(props.sca_lat_cell, props.sca_lon_cell, props.sca_alt_cell, props.sca_alt_max, props.sca_alt_min)
 
         positions = np.array(seeds)
-        vals = tree_core.get_mags(interaction.read[idx], positions)
+        vals = tree_core.get_mags(interaction.read[idx], interaction.tree_config.geometry.parameters, positions)
         vals = np.asarray(vals)
 
         mask = vals >= props.threshold
@@ -183,7 +181,7 @@ def point_cloud_field_execute_factory(idx):
         bpy.context.scene.collection.children.link(sca_viz_collection) 
         
  
-        flat_x_y_z = np.asarray(positions / 6371000.0).flatten()
+        flat_x_y_z = np.asarray(positions / distance_from(*interaction.geometry.positions[0:3])).flatten()
         norm_vals = (vals - vals.min()) / (vals.max() - vals.min())
 
 

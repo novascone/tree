@@ -20,6 +20,7 @@ struct Derivative {
    
    TriInterp& interp;
    const std::optional<std::vector<std::string>>& variable_directions; 
+   const std::map<std::string, double>& geometric_parameters;
    const double PI = 3.14159265358979323846;
 
    std::vector<char> sign_chars;
@@ -30,7 +31,8 @@ struct Derivative {
 
 
 
-   Derivative(TriInterp& t, const std::optional<std::vector<std::string>>& variable_directions_p) : interp(t), variable_directions(variable_directions_p)  {
+   Derivative(TriInterp& t, const std::optional<std::vector<std::string>>& variable_directions_p, const std::map<std::string, double>& geometric_parameters_p) :
+              interp(t), variable_directions(variable_directions_p), geometric_parameters(geometric_parameters_p)  {
 
       
       sign_chars.resize((*variable_directions).size());
@@ -53,7 +55,7 @@ struct Derivative {
    }
 
    void operator()(const double, std::vector<double>& position, std::vector<double>& derivative) {
-      std::array<double,3> native_pos = Transform<CoordSystem>::fromCart(position[0], position[1], position[2]); 
+      std::array<double,3> native_pos = Transform<CoordSystem>::fromCart(position[0], position[1], position[2], geometric_parameters); 
       std::array<std::array<double,3>,3> current_basis = Basis<VectorConvention>::localBasis(position[0], position[1], position[2]);
       std::vector<double> arbitrary = interp.interp({native_pos[0], native_pos[1], native_pos[2]});
       std::fill(derivative.begin(), derivative.end(), 0.0);
@@ -69,7 +71,7 @@ struct Derivative {
 
 template <typename CoordSystem, typename VectorConvention>
 
-StreamlineSet driveField(Read& loaded_data, std::vector<std::vector<double>>& seeds, double interval_start,
+StreamlineSet driveField(Read& loaded_data, const std::map<std::string, double>& geometric_parameters, std::vector<std::vector<double>>& seeds, double interval_start,
                          double interval_end, double initial_step_size) {
 
    double default_absolute_error = 1.0e-10;
@@ -82,7 +84,7 @@ StreamlineSet driveField(Read& loaded_data, std::vector<std::vector<double>>& se
    #pragma omp parallel for 
    for (int i = 0; i < static_cast<int>(seeds.size()); i++) {
       TriInterp triInterp(loaded_data, periodic); 
-      Derivative<CoordSystem, VectorConvention> derivative(triInterp, loaded_data.variable_directions); 
+      Derivative<CoordSystem, VectorConvention> derivative(triInterp, loaded_data.variable_directions, geometric_parameters); 
 
       try {
          Output out(0); 

@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath> 
 #include <string>
+#include <map>
 #include <stdexcept>
 
 template <typename CoordSystem>
@@ -13,11 +14,10 @@ struct Transform;
 struct Geographic {};
 
 template <>
-struct Transform<Geographic> {
-   static constexpr double R_meters = 6371000;
+struct Transform<Geographic> { 
    static const std::array<std::string, 3> axis_names;
-   static std::array<double,3> toCart(double lat, double lon, double alt);
-   static std::array<double,3> fromCart(double x, double y, double z); 
+   static std::array<double,3> toCart(double lat, double lon, double alt, const std::map<std::string, double>& geometric_parameters);
+   static std::array<double,3> fromCart(double x, double y, double z, const std::map<std::string, double>& geometric_parameters); 
 };
 
 struct Cartesian {};
@@ -25,8 +25,8 @@ struct Cartesian {};
 template<>
 struct Transform<Cartesian> {
    static const std::array<std::string, 3> axis_names;
-   static std::array<double,3> toCart(double x, double y, double z);
-   static std::array<double,3> fromCart(double x, double y, double z); 
+   static std::array<double,3> toCart(double x, double y, double z, const std::map<std::string, double>& geometric_parameters);
+   static std::array<double,3> fromCart(double x, double y, double z, const std::map<std::string, double>& geometric_parameters); 
 
 };
 
