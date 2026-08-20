@@ -58,9 +58,9 @@ def stratified_random(x_cell, y_cell, z_cell, z_max, z_min):
     seeds = seeds.tolist()
     return seeds
 
-def stratified_random_sphere(row_cell, arc_per_row, z_cell, z_max, z_min):
+def stratified_random_sphere(row_cell, arc_per_row, z_max, z_min, geometric_parameters):
 
-    R = 6371000.0
+    R = geometric_parameters["radius"] 
     if z_min == z_max:
         r = z_min + R
         n_rows = math.ceil(2*r / row_cell)
@@ -95,8 +95,11 @@ def stratified_random_sphere(row_cell, arc_per_row, z_cell, z_max, z_min):
     else: raise NotImplementedError
 
 
-def strat_sphere_args(props):
-    return [props.vec_lat_cell, props.vec_lon_cell, props.vec_alt_cell, props.vec_alt_max, props.vec_alt_min]
+def strat_sphere_args(type, props, geometric_parameters):
+    if type == "vec":
+        return [props.vec_lat_cell, props.vec_lon_cell, props.vec_alt_max, props.vec_alt_min, geometric_parameters]
+    else:
+        return [props.sca_lat_cell, props.sca_lon_cell, props.sca_alt_max, props.sca_alt_min, geometric_parameters]
 
 
 def convert_to_cart(lats, lons, alts): 
@@ -108,24 +111,30 @@ def convert_to_cart(lats, lons, alts):
 
     return x, y, z
 
-def get_ro(x, y, z):
-    R = 6371000.0
+def get_sphere_level(x, y, z, geometric_parameters):
+    R = geometric_parameters["radius"] 
     return (math.sqrt(x**2 + y**2 + z**2) - R)
-
 
 def arc_length(points):
     diffs = np.diff(points, axis=0)
     norms = np.linalg.norm(diffs, axis=1)
-    lengths= np.concatenate([[0.0], np.cumsum(norms)])
-    return lengths
+    length = np.concatenate([[0.0], np.cumsum(norms)])
+    return length
 
-dispatch = {
+level_dispatch = {
+    'sphere' : get_sphere_level 
+}
+
+def leveling_dispatch(geometry):
+    return level_dispatch[geometry]
+
+seed_dispatch = {
         ('stratified', 'sphere') : stratified_random_sphere, 
 }
 
 def seeding_dispatch(seeding_type, geometry) :
         
-    return dispatch[(seeding_type, geometry)]
+    return seed_dispatch[(seeding_type, geometry)]
 
 args = {
     ('stratified', 'sphere') : strat_sphere_args,

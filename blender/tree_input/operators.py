@@ -9,7 +9,7 @@ import numpy as np
 import openvdb as vdb
 from . import interaction
 from .materials import mat_nodes, sca_mat_nodes, volume_mat_nodes
-from .utils import convert_to_cart, arc_length, fibonacci_sphere, stratified_random, get_ro, seeding_dispatch, args_dispatch, distance_from
+from .utils import convert_to_cart, arc_length, fibonacci_sphere, stratified_random, leveling_dispatch, seeding_dispatch, args_dispatch, distance_from
 
 def register_field_operators(): 
     unregister_field_operators()
@@ -62,7 +62,7 @@ def vec_comp_execute_factory(idx):
         seeding_tuple = (props.vec_seeding_mode.lower(), interaction.tree_config.geometry.type.lower())
         seeding = seeding_dispatch(*seeding_tuple)
         seeding_args = args_dispatch(*seeding_tuple)
-        args = seeding_args(props)
+        args = seeding_args("vec", props, interaction.tree_config.geometry.parameters)
         seeds = seeding(*args)
         #seeds = [[lat, lon, 86.0] for lat in range(0, 31, 6) for lon in range(0, 31, 6)]
         seeds = np.asarray(seeds) 
@@ -77,6 +77,7 @@ def vec_comp_execute_factory(idx):
 def vec_viz_execute_factory(idx):
     def execute(self, context):
         n = len([c for c in bpy.data.collections if c.name.startswith('run_')])
+        geometric_parameters = interaction.tree_config.geometry.parameters
         streamline_collection = bpy.data.collections.new(f'{interaction.field_names[idx]}_vector_run_{n}')
         bpy.context.scene.collection.children.link(streamline_collection)
         alt_min = context.scene.tree_field_props[idx].vec_alt_min
@@ -93,17 +94,18 @@ def vec_viz_execute_factory(idx):
             t_mat += time.perf_counter() - t0
             alt_collection = bpy.data.collections.new(f'{alts[i]}_m')
             streamline_collection.children.link(alt_collection) 
+            get_level = leveling_dispatch(interaction.tree_config.geometry.type.lower())
 
 
             
-            alt_streams = [s for s in interaction.streamlines[idx] if len(s) > 0.0 and abs(get_ro(s[0][0], s[0][1], s[0][2]) - alt) < 0.01]
+            alt_streams = [s for s in interaction.streamlines[idx] if len(s) > 0.0 and abs(get_level(s[0][0], s[0][1], s[0][2], geometric_parameters) - alt) < 0.01]
 
             xs_np = np.array([p[0] for s in alt_streams for p in s])
             ys_np = np.array([p[1] for s in alt_streams for p in s])
             zs_np = np.array([p[2] for s in alt_streams for p in s])
 
             positions = np.stack([xs_np, ys_np, zs_np], axis=1) 
-            speeds = tree_core.get_mags(interaction.read[idx], interaction.tree_config.geometry.parameters, positions)
+            speeds = tree_core.get_mags(interaction.read[idx], geometric_parameters, positions)
             speeds = np.asarray(speeds)
             normalized_speeds = np.zeros(len(speeds))
             positions = positions / distance_from(*interaction.geometry.positions[0:3]) 
@@ -160,8 +162,11 @@ def point_cloud_field_execute_factory(idx):
         props = context.scene.tree_field_props[idx]
         point_radius = context.scene.tree_field_props[idx].point_radius 
 
-        seeds = stratified_random(props.sca_lat_cell, props.sca_lon_cell, props.sca_alt_cell, props.sca_alt_max, props.sca_alt_min)
-
+        seeding_tuple = (props.sca_seeding_mode.lower(), interaction.tree_config.geometry.type.lower())
+        seeding = seeding_dispatch(*seeding_tuple)
+        seeding_args = args_dispatch(*seeding_tuple)
+        args = seeding_args("sca", props, interaction.tree_config.geometry.parameters)
+        seeds = seeding(*args)
         positions = np.array(seeds)
         vals = tree_core.get_mags(interaction.read[idx], interaction.tree_config.geometry.parameters, positions)
         vals = np.asarray(vals)
