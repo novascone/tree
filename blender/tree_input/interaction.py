@@ -188,25 +188,25 @@ class FieldProperties(bpy.types.PropertyGroup):
         name="Color Mode",
         items=[
             ('BLUE_RED', "Blue Red", ""),
-            ('VIRIDIS', "VIRIDIS", ""),
+            ('VIRIDIS', "Viridis", ""),
         ],
         default='BLUE_RED'
     )
     vec_seeding_mode: EnumProperty(
             name="Seeding Mode",
             items=[
-                ('FIBONACCI', "Fibonacci Sphere", ""),
                 ('STRATIFIED', "Stratified Random", ""),
-            ],
-            default='FIBONACCI'
+                ('FIBONACCI', "Fibonacci Sphere", ""),
+                            ],
+            default='STRATIFIED'
         )
     sca_seeding_mode: EnumProperty(
             name="Seeding Mode",
             items=[
-                ('FIBONACCI', "Fibonacci Sphere", ""),
                 ('STRATIFIED', "Stratified Random", ""),
-            ],
-            default='FIBONACCI'
+                ('FIBONACCI', "Fibonacci Sphere", ""),
+                            ],
+            default='STRATIFIED'
         )
     seeds_per_level: IntProperty(name="Seeds Per Level", default=50, min=1)
     coordinate_system: StringProperty(name="Coordinate System")

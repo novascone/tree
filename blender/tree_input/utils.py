@@ -3,16 +3,22 @@ from . import interaction
 import math
 import numpy as np
 
-def fibonacci_sphere(n):
+def fibonacci_sphere(n, level_min, level_max, level_step, geometric_parameters):
     golden = (1 + math.sqrt(5)) / 2
+    R = geometric_parameters["radius"]
     points = []
-    for i in range(n):
-        theta = 2 * math.pi * i /golden
-        phi = math.acos(1 - 2 * (i + 0.5) / n)
-        x = math.sin(phi) * math.cos(theta)
-        y = math.sin(phi) * math.sin(theta)
-        z = math.cos(phi)
-        points.append((x, y, z))
+    levels = [level_min]
+    while levels[-1] + level_step <= level_max + 1e-6:
+        levels.append(levels[-1] + level_step)
+    for level in levels:
+        for i in range(n):
+            theta = 2 * math.pi * i /golden
+            phi = math.acos(1 - 2 * (i + 0.5) / n)
+            x = math.sin(phi) * math.cos(theta) * (R + level)
+            y = math.sin(phi) * math.sin(theta) * (R + level)
+            z = math.cos(phi) * (R + level)
+            points.append((x, y, z))
+    
     return points
 
 def stratified_random(x_cell, y_cell, z_cell, z_max, z_min):
@@ -101,6 +107,15 @@ def strat_sphere_args(type, props, geometric_parameters):
     else:
         return [props.sca_lat_cell, props.sca_lon_cell, props.sca_alt_max, props.sca_alt_min, geometric_parameters]
 
+def fib_sphere_args(type, props, geometric_parameters):
+    if type == "vec":
+        return [props.seeds_per_level, props.vec_alt_min, props.vec_alt_max, props.vec_alt_step, geometric_parameters]
+    else :
+        return [props.seeds_per_level, props.sca_alt_min, props.sca_alt_max, props.sca_alt_step, geometric_parameters]
+
+
+ 
+
 
 def convert_to_cart(lats, lons, alts): 
     R = 6371000.0
@@ -129,7 +144,8 @@ def leveling_dispatch(geometry):
     return level_dispatch[geometry]
 
 seed_dispatch = {
-        ('stratified', 'sphere') : stratified_random_sphere, 
+        ('stratified', 'sphere') : stratified_random_sphere,
+        ('fibonacci', 'sphere') : fibonacci_sphere,
 }
 
 def seeding_dispatch(seeding_type, geometry) :
@@ -138,6 +154,7 @@ def seeding_dispatch(seeding_type, geometry) :
 
 args = {
     ('stratified', 'sphere') : strat_sphere_args,
+    ('fibonacci', 'sphere') : fib_sphere_args,
 }
 
 def args_dispatch(seeding_type, geometry):
