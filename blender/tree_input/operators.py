@@ -80,77 +80,64 @@ def vec_viz_execute_factory(idx):
         geometric_parameters = interaction.tree_config.geometry.parameters
         streamline_collection = bpy.data.collections.new(f'{interaction.field_names[idx]}_vector_run_{n}')
         bpy.context.scene.collection.children.link(streamline_collection)
-        alt_min = context.scene.tree_field_props[idx].vec_alt_min
-        alt_step = context.scene.tree_field_props[idx].vec_alt_step
-        alt_max = context.scene.tree_field_props[idx].vec_alt_max 
-        alts = [alt_min] 
-        while alts[-1] + alt_step <= alt_max + 1e-6:
-            alts.append(alts[-1] + alt_step)
         t_mat = 0.0
-        t_points = 0.0
-        for i, alt in enumerate(alts):
-            t0 = time.perf_counter()
-            mat = mat_nodes(context, i, idx)
-            t_mat += time.perf_counter() - t0
-            alt_collection = bpy.data.collections.new(f'{alts[i]}_m')
-            streamline_collection.children.link(alt_collection) 
-            get_level = leveling_dispatch(interaction.tree_config.geometry.type.lower())
+        t_points = 0.0 
+        t0 = time.perf_counter()
+        mat = mat_nodes(context, 0, idx)
+        t_mat += time.perf_counter() - t0      
+        streamlines = [s for s in interaction.streamlines[idx] if len(s) > 0.0] 
 
+        xs_np = np.array([p[0] for s in streamlines for p in s])
+        ys_np = np.array([p[1] for s in streamlines for p in s])
+        zs_np = np.array([p[2] for s in streamlines for p in s])
 
-            
-            alt_streams = [s for s in interaction.streamlines[idx] if len(s) > 0.0 and abs(get_level(s[0][0], s[0][1], s[0][2], geometric_parameters) - alt) < 0.01]
+        positions = np.stack([xs_np, ys_np, zs_np], axis=1) 
+        speeds = tree_core.get_mags(interaction.read[idx], geometric_parameters, positions)
+        speeds = np.asarray(speeds)
+        normalized_speeds = np.zeros(len(speeds))
+        positions = positions / distance_from(*interaction.geometry.positions[0:3]) 
+        flat_positions = positions.flatten()
 
-            xs_np = np.array([p[0] for s in alt_streams for p in s])
-            ys_np = np.array([p[1] for s in alt_streams for p in s])
-            zs_np = np.array([p[2] for s in alt_streams for p in s])
-
-            positions = np.stack([xs_np, ys_np, zs_np], axis=1) 
-            speeds = tree_core.get_mags(interaction.read[idx], geometric_parameters, positions)
-            speeds = np.asarray(speeds)
-            normalized_speeds = np.zeros(len(speeds))
-            positions = positions / distance_from(*interaction.geometry.positions[0:3]) 
-            flat_positions = positions.flatten()
-
-            if len(speeds) > 0:
-                percentile_clamp = np.percentile(speeds, 99)
-                if percentile_clamp != 0:
-                    normalized_speeds = np.clip(speeds / percentile_clamp, 0, 1) 
+        if len(speeds) > 0:
+            percentile_clamp = np.percentile(speeds, 99)
+            if percentile_clamp != 0:
+                normalized_speeds = np.clip(speeds / percentile_clamp, 0, 1) 
               
 
-            t0 = time.perf_counter()
+        t0 = time.perf_counter()
 
-            curve_data = bpy.data.hair_curves.new(f'alt{alt}_curves')
-            curve_data.add_curves([len(s) for s in alt_streams]) 
-            arc_attr = curve_data.attributes.new('arc_param', 'FLOAT', 'POINT')
-            radius_attr = curve_data.attributes.new('radius', 'FLOAT', 'POINT')
-            phase_attr = curve_data.attributes.new('phase', 'FLOAT', 'CURVE') 
-            speed_attr = curve_data.attributes.new('speed', 'FLOAT', 'POINT')
+        curve_data = bpy.data.hair_curves.new(f'{interaction.field_names[idx]}_curves')
+        curve_data.add_curves([len(s) for s in streamlines]) 
+        arc_attr = curve_data.attributes.new('arc_param', 'FLOAT', 'POINT')
+        radius_attr = curve_data.attributes.new('radius', 'FLOAT', 'POINT')
+        phase_attr = curve_data.attributes.new('phase', 'FLOAT', 'CURVE') 
+        speed_attr = curve_data.attributes.new('speed', 'FLOAT', 'POINT')
              
-            flat_phase = np.array([random.random() for s in alt_streams])
-            total_points = sum(len(s) for s in alt_streams)
-            flat_radius = np.full(total_points, 0.1)
-            curve_data.position_data.foreach_set('vector', flat_positions)
-            phase_attr.data.foreach_set('value', flat_phase)
-            radius_attr.data.foreach_set('value', flat_radius)
-            speed_attr.data.foreach_set('value', normalized_speeds)
+        flat_phase = np.array([random.random() for s in streamlines])
+        total_points = sum(len(s) for s in streamlines)
+        flat_radius = np.full(total_points, 0.1)
+        curve_data.position_data.foreach_set('vector', flat_positions)
+        phase_attr.data.foreach_set('value', flat_phase)
+        radius_attr.data.foreach_set('value', flat_radius)
+        speed_attr.data.foreach_set('value', normalized_speeds)
 
-            arc_segments = []
-            for s in alt_streams:
-                pts = np.stack((
-                               np.array([p[0] for p in s]),
-                               np.array([p[1] for p in s]),
-                               np.array([p[2] for p in s])), axis=1)
-                lens = arc_length(pts)
-                arc_segments.append(lens / lens[-1])
-            flat_arc = np.concatenate(arc_segments)
+        arc_segments = []
+        for s in streamlines:
+            pts = np.stack((
+                           np.array([p[0] for p in s]),
+                           np.array([p[1] for p in s]),
+                           np.array([p[2] for p in s])), axis=1)
+            lens = arc_length(pts)
+            arc_segments.append(lens / lens[-1])
+        flat_arc = np.concatenate(arc_segments)
 
-            arc_attr.data.foreach_set('value', flat_arc)
+        arc_attr.data.foreach_set('value', flat_arc)
 
 
-            obj = bpy.data.objects.new(f'alt_{alt}_m', curve_data)
-            obj.data.materials.append(mat)
-            alt_collection.objects.link(obj)
-            t_points += time.perf_counter() - t0
+        obj = bpy.data.objects.new(f'{interaction.field_names[idx]}_m', curve_data)
+        obj.data.materials.append(mat)
+        streamline_collection.objects.link(obj)
+        t_points += time.perf_counter() - t0
             
         print(f"mat: {t_mat:.3f}s points: {t_points:.3f}s")
         return {'FINISHED'}
