@@ -68,6 +68,15 @@ def vec_comp_execute_factory(idx):
         seeds = np.asarray(seeds) 
         t0 = time.perf_counter()
         interaction.streamlines[idx] = tree_core.drive_field(interaction.read[idx], interaction.tree_config.geometry.parameters, seeds, props.interval_start, props.interval_end, props.step_size)
+    
+        num_empty = 0
+        for s in interaction.streamlines[idx]:
+            if len(s) == 0:
+                num_empty += 1
+
+        if num_empty != 0:
+            self.report({'WARNING'}, f"{num_empty}/{len(interaction.streamlines[idx])} streamlines are empty, check seeding against dataset if this is unexpected")
+
         t1 = time.perf_counter()
         print(f"Integration: {t1 - t0:.3f}s")
         return {'FINISHED'}
@@ -78,14 +87,19 @@ def vec_viz_execute_factory(idx):
     def execute(self, context):
         n = len([c for c in bpy.data.collections if c.name.startswith('run_')])
         geometric_parameters = interaction.tree_config.geometry.parameters
+        streamlines = [s for s in interaction.streamlines[idx] if len(s) > 0.0] 
+
+        if len(streamlines) == 0:
+            self.report({'WARNING'}, "Streamlines have no length")
+            return {'CANCELLED'}
+
         streamline_collection = bpy.data.collections.new(f'{interaction.field_names[idx]}_vector_run_{n}')
         bpy.context.scene.collection.children.link(streamline_collection)
         t_mat = 0.0
         t_points = 0.0 
         t0 = time.perf_counter()
         mat = mat_nodes(context, 0, idx)
-        t_mat += time.perf_counter() - t0      
-        streamlines = [s for s in interaction.streamlines[idx] if len(s) > 0.0] 
+        t_mat += time.perf_counter() - t0       
 
         xs_np = np.array([p[0] for s in streamlines for p in s])
         ys_np = np.array([p[1] for s in streamlines for p in s])

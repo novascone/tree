@@ -13,7 +13,9 @@
      grid_type = structured
      variables = u_mer u_zon
      variable_directions = +lat +lon
+     variable_units = m/s m/s
      coordinates = lat lon alt
+     coordinate_units = degree degree km 
      coordinate_system = geographic
      periodic = lon
      vector_convention = ENU
