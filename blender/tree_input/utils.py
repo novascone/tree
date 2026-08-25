@@ -118,9 +118,6 @@ def fib_sphere_args(type, props, geometric_parameters):
         return [props.seeds_per_level, props.sca_alt_min, props.sca_alt_max, props.sca_alt_step, geometric_parameters]
 
 
- 
-
-
 def convert_to_cart(lats, lons, alts): 
     R = 6371000.0
     r = (R + alts) / R
@@ -167,4 +164,18 @@ def args_dispatch(seeding_type, geometry):
 
 def distance_from(x, y, z):
     return math.sqrt(x**2 + y**2 + z**2)
+
+def filter_by_level(context, positions, R):
+
+    curves = context.active_object.data
+    offsets = np.empty(len(curves.curve_offset_data), dtype=np.int32) 
+    curves.curve_offset_data.foreach_get('value', offsets)
+    start_indices = offsets[:-1]
+    start_positions = positions[start_indices] * R
+    np.linalg.norm(start_positions, axis=1)
+    
+    
+
+
+    
 
