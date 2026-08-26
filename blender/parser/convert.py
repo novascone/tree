@@ -4,12 +4,14 @@ class GeometryConfig:
     type:str
     source:str | None
     parameters:dict
+    texture:str | None
 
     def __init__(self):
         self.name = None
         self.source = None
         self.type = None
         self.parameters = None
+        self.texture = None
         
 class FieldConfig:
     name:str
@@ -70,7 +72,7 @@ known_colormaps = [
 def set_geometry_parameters(attributes) -> dict:
     parameters = {}
     for k, v in attributes.items():
-        if k not in ("type", "source"):
+        if k not in ("type", "source", "texture"):
             parameters[k] = cast(v)
     return parameters
 
@@ -96,6 +98,8 @@ def traverse(TREE_Config, valid_tree, parent = None) -> TREEConfig:
             else:
                 geometry.source = None
             geometry.parameters = set_geometry_parameters(valid_tree.attributes)
+            if "texture" in valid_tree.attributes:
+                geometry.texture = valid_tree.attributes["texture"]
             TREE_Config.geometry = geometry 
         elif parent.name == "Fields":
             field = FieldConfig()

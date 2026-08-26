@@ -1,5 +1,6 @@
 
 
+from .materials import texture_mat_nodes
 from .. import tree_core
 from ..parser.lex import lex
 from ..parser.parse import parse 
@@ -14,6 +15,7 @@ import bpy
 import numpy as np
 
 geometry = None
+texture_path = None
 read = None
 streamlines = {} 
 tree_config = None
@@ -24,7 +26,7 @@ _field_operators = []
 
 def read_data(input_file):
 
-    global geometry, read, tree_config, field_names
+    global geometry, texture_path, read, tree_config, field_names
     with open(input_file) as f:
         tokens = lex(f)
         
@@ -33,6 +35,7 @@ def read_data(input_file):
     config = convert(root) 
     tree_config = translate(config) 
     geometry = tree_core.build_mesh(tree_config.geometry)
+    texture_path = config.geometry.texture
     read = [tree_core.Read(field) for field in tree_config.fields]
     field_names = [field.name for field in tree_config.fields]
     
@@ -54,6 +57,9 @@ class ImportData(Operator, ImportHelper):
             mesh = build_mesh(geometry)
             obj = bpy.data.objects.new(geometry.name, mesh)
             bpy.context.collection.objects.link(obj)
+            if texture_path:
+                mat = texture_mat_nodes(texture_path)
+                obj.data.materials.append(mat)
             register_field_classes()
             operators.register_field_operators()
             scene = context.scene

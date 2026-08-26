@@ -2,6 +2,7 @@
 import bpy
 import colorsys
 import numpy as np
+import os
 
 def mat_nodes(context, i, idx):
  
@@ -169,4 +170,26 @@ def volume_mat_nodes(context, idx):
     links.new(pv.outputs['Volume'], output.inputs['Volume'])
 
     return mat
+
+def texture_mat_nodes(image_path):
+
+    mat = bpy.data.materials.new('mat_texture')
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+    nodes.clear()
+    img = bpy.data.images.load(os.path.expanduser(image_path), check_existing=True)
+
+    coord = nodes.new('ShaderNodeTexCoord')
+    env = nodes.new('ShaderNodeTexEnvironment')
+    env.image = img
+
+    bsdf = nodes.new('ShaderNodeBsdfPrincipled')
+    links.new(coord.outputs['Object'], env.inputs['Vector'])
+    output = nodes.new('ShaderNodeOutputMaterial')
+    links.new(env.outputs['Color'], bsdf.inputs['Base Color'])
+    links.new(bsdf.outputs['BSDF'], output.inputs['Surface'])
+
+    return mat
+
     
