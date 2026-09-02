@@ -549,5 +549,14 @@ def gen_field_lines_viz(context, idx):
     print(f"mat: {t_mat:.3f}s points: {t_points:.3f}s")
     return {'FINISHED'}
 
+def explode(objects):
+    for object in objects:
+        mesh = object.data
+        n = len(mesh.vertices)
+        positions = np.empty(n * 3, dtype=np.float32)
+        object.foreach_get("co", positions)
+        positions = positions.reshape(n, 3)
+
+
 
 

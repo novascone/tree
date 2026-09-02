@@ -184,8 +184,11 @@ def texture_mat_nodes(image_path):
     env = nodes.new('ShaderNodeTexEnvironment')
     env.image = img
 
+    mapping = nodes.new('ShaderNodeMapping')
+    mapping.inputs["Scale"].default_value[0] = -1
     bsdf = nodes.new('ShaderNodeBsdfPrincipled')
-    links.new(coord.outputs['Object'], env.inputs['Vector'])
+    links.new(coord.outputs['Object'], mapping.inputs['Vector'])
+    links.new(mapping.outputs["Vector"], env.inputs["Vector"])
     output = nodes.new('ShaderNodeOutputMaterial')
     links.new(env.outputs['Color'], bsdf.inputs['Base Color'])
     links.new(bsdf.outputs['BSDF'], output.inputs['Surface'])
