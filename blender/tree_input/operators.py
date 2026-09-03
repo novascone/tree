@@ -554,8 +554,14 @@ def explode(objects):
         mesh = object.data
         n = len(mesh.vertices)
         positions = np.empty(n * 3, dtype=np.float32)
-        object.foreach_get("co", positions)
+        mesh.vertices.foreach_get("co", positions)
         positions = positions.reshape(n, 3)
+        rot_scale = np.array(object.matrix_world.to_3x3())
+        translation = np.array(object.matrix_world.translation)
+
+        world_positions = positions @ rot_scale + translation
+        
+
 
 
 
